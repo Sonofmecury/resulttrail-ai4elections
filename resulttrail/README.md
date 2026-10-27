@@ -4,6 +4,8 @@
 
 A free and open-source prototype for recording a **fictional** polling-unit result copy. A reporter can save encrypted drafts and records on a device during an outage, sign in and sync later, and verify a server-signed receipt. The hosted site also accepts a small original source image after sync. A reviewer can inspect arithmetic checks, the source image, corrections and a geographic coverage map before making a human decision. Only a reviewer-approved version can produce a minimized signed JSON package. This is independent observer workflow research, **not an official election system**.
 
+The illustrated [user guide](docs/USER_GUIDE.pdf) introduces the project and walks through the reporter and reviewer pathways, including the state, LGA and ward map views. It will be updated as the prototype changes.
+
 ## Run locally (Windows PowerShell)
 
 From this `app` directory:
