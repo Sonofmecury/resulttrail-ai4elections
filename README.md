@@ -6,6 +6,8 @@ This fork contains [ResultTrail](resulttrail/README.md), an independent, fiction
 
 Run and review the project from `resulttrail/`. Its [problem statement](resulttrail/docs/PROBLEM_STATEMENT.md), [methodology and evaluation](resulttrail/docs/METHODOLOGY_AND_EVALUATION.md), [system card](resulttrail/docs/MODEL_CARD.md), [safety statement](resulttrail/docs/SAFETY_AND_LIMITATIONS.md), [data sheet](resulttrail/docs/DATASHEET.md) and [privacy note](resulttrail/docs/privacy-and-retention.md) explain the prototype and its limits. The experimental anomaly model did not meet its predeclared gate and is disabled. A demo video will be added before submission.
 
+The [image and AI delivery plan](resulttrail/docs/AI_AND_IMAGE_PLAN.md) sets out the next build milestones and evaluation gates; those features are not yet live.
+
 **Artificial Intelligence for Electoral Innovation, Integrity and Inclusion**
 
 The **#AI4Elections Hackathon** is a nonpartisan, design-and-develop competition organised by **Rise Networks** from October 2026 to February 2027. Participants will develop working, responsible AI prototypes that address challenges related to Nigeria's electoral and civic processes.

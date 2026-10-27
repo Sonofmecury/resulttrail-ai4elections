@@ -30,6 +30,8 @@ Reporter party rows can be added or removed (2–26 rows). Codes such as `APC`, 
 
 New reports include a three-step evidence checklist. Its confirmations and device-recorded save time are included in the signed report payload; the time is not an independent timestamp. Reporters can see a received/reviewed progress timeline and reviewer feedback across devices, and can remove individual encrypted local copies. The [privacy and retention note](docs/privacy-and-retention.md) explains the distinction between local removal and hosted records, reviewer-only geographic access, and current deletion limits.
 
+The [image and AI delivery plan](docs/AI_AND_IMAGE_PLAN.md) sequences encrypted offline photo capture, evidence binding, mobile storage measurements, and a gated on-device OCR experiment. These are planned features; the current hosted image flow still attaches only after receipt.
+
 The hosted reviewer account now has a Geographic Explorer with State → LGA → Ward drill-down, a hash-verified source-image preview and a signed-receipt verification control. The hosted demonstration includes 15 geographically dispersed illustrative records, including approved, pending and correction-requested states. The separate hackathon login handout is kept in the ignored `instance/hackathon-access.md` file.
 
 1. Sign in as reporter, create/unlock the local vault, enter a `SIM-` unit code and add each party abbreviation and vote figure shown on the illustrative source, then save. The status is **On this device**.
