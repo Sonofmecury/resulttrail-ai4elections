@@ -1,0 +1,13 @@
+client/node_modules/
+client/dist/
+.venv/
+__pycache__/
+.pytest_cache/
+instance/
+instance-backup-test/
+.playwright-cli/
+cloud/node_modules/
+cloud/.wrangler/
+cloud/.dev.vars
+*.pyc
+.env

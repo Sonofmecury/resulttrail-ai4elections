@@ -1,0 +1,57 @@
+{
+  "dataset": {
+    "seed": 20261026,
+    "generator": "aegisrelay-fictional-v1",
+    "train_rows": 540,
+    "holdout_rows": 300,
+    "holdout_by_family": {
+      "clean": 180,
+      "normal_extreme": 36,
+      "arithmetic": 36,
+      "contextual": 48
+    },
+    "review_budget_fraction": 0.2,
+    "features": [
+      "relative_accredited",
+      "turnout",
+      "rejected_fraction",
+      "party_A_fraction"
+    ],
+    "no_real_election_data": true
+  },
+  "holdout_sha256": "db13c3117aa8227bab9f46273f6922b0173274efd34b58e65922539006b2ed71",
+  "fit_ms": 196.7,
+  "results": {
+    "A_arithmetic": {
+      "review_budget": 60,
+      "true_positives": 40,
+      "false_flags": 20,
+      "positives": 84,
+      "precision": 0.6667,
+      "recall": 0.4762,
+      "critical_misses": 0
+    },
+    "B_peer": {
+      "review_budget": 60,
+      "true_positives": 54,
+      "false_flags": 6,
+      "positives": 84,
+      "precision": 0.9,
+      "recall": 0.6429,
+      "critical_misses": 0
+    },
+    "C_peer_plus_isolation_forest": {
+      "review_budget": 60,
+      "true_positives": 55,
+      "false_flags": 5,
+      "positives": 84,
+      "precision": 0.9167,
+      "recall": 0.6548,
+      "critical_misses": 0
+    }
+  },
+  "incremental_recall_gain": 0.0119,
+  "model_gate_passed": false,
+  "product_model_enabled": false,
+  "limitations": "Fictional generator labels and three invented peer groups; no claim about real election integrity or fraud. Model remains out of product until independent validation."
+}

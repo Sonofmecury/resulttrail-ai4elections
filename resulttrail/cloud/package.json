@@ -1,0 +1,17 @@
+{
+  "name": "aegisrelay-cloud",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "migrate:local": "wrangler d1 migrations apply aegisrelay-prod --local",
+    "migrate:remote": "wrangler d1 migrations apply aegisrelay-prod --remote"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261026.1",
+    "typescript": "~5.9.3",
+    "wrangler": "^4.153.0"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "aegisrelay-app",
+  "workers_dev": true,
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-26",
+  "routes": [
+    { "pattern": "resulttrail.ng", "custom_domain": true },
+    { "pattern": "www.resulttrail.ng", "custom_domain": true }
+  ],
+  "assets": {
+    "directory": "../client/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [{
+    "binding": "DB", "database_name": "aegisrelay-prod", "database_id": "f4106a39-3e2a-4b81-b98f-ff7794442c1f"
+  }]
+}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="500" viewBox="0 0 660 500" fill="none">
+  <defs><pattern id="tri" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M0 0 26 15 0 30V0Z" fill="#005D40"/><path d="m30 0-11 15L30 30V0Z" fill="#42B78B"/></pattern></defs>
+  <path d="M425 0h235v180L515 77 425 0Z" fill="url(#tri)" opacity=".9"/>
+  <path d="M523 290h137v210H493l-34-122 64-88Z" fill="url(#tri)" opacity=".78"/>
+  <path d="M65-25c28 50 19 96-4 143s-20 88 6 137M94-25c28 50 19 96-4 143s-20 88 6 137M123-25c28 50 19 96-4 143s-20 88 6 137M152-25c28 50 19 96-4 143s-20 88 6 137" stroke="#C5E8D8" stroke-width="2"/>
+  <path d="M155 390c48-61 109-80 191-56s101 82 161 64M155 410c48-61 109-80 191-56s101 82 161 64M155 430c48-61 109-80 191-56s101 82 161 64M155 450c48-61 109-80 191-56s101 82 161 64" stroke="#159367" stroke-width="2" opacity=".65"/>
+  <circle cx="400" cy="171" r="78" stroke="#53BC8F" stroke-width="2"/><circle cx="400" cy="171" r="57" stroke="#53BC8F" stroke-width="2"/><circle cx="400" cy="171" r="36" fill="#B9E8D1"/>
+  <path d="M318 70h10m-5-5v10M260 106h10m-5-5v10M243 249h10m-5-5v10M551 234h10m-5-5v10" stroke="#056A4A" stroke-width="2"/>
+  <path d="m13 316 14 8-14 8M33 316l14 8-14 8M53 316l14 8-14 8M73 316l14 8-14 8" fill="#178B60"/>
+</svg>
