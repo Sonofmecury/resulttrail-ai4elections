@@ -4,7 +4,7 @@
 
 This fork contains [ResultTrail](resulttrail/README.md), an independent, fictional-only working prototype for **Track 5: Election Observation and Citizen Accountability**, chiefly problem **5C (evidence hygiene)** with a reporter feedback loop for **5E**. The hosted demonstration is [resulttrail.ng](https://resulttrail.ng). It is not an official election service or an endorsement by the organisers or INEC.
 
-Run and review the project from `resulttrail/`. Its [system card](resulttrail/docs/MODEL_CARD.md), [safety statement](resulttrail/docs/SAFETY_AND_LIMITATIONS.md), [data sheet](resulttrail/docs/DATASHEET.md), [evaluation](resulttrail/docs/synthetic-evaluation.json) and [privacy note](resulttrail/docs/privacy-and-retention.md) explain the prototype and its limits. The experimental anomaly model did not meet its predeclared gate and is disabled. A demo video will be added before submission.
+Run and review the project from `resulttrail/`. Its [problem statement](resulttrail/docs/PROBLEM_STATEMENT.md), [methodology and evaluation](resulttrail/docs/METHODOLOGY_AND_EVALUATION.md), [system card](resulttrail/docs/MODEL_CARD.md), [safety statement](resulttrail/docs/SAFETY_AND_LIMITATIONS.md), [data sheet](resulttrail/docs/DATASHEET.md) and [privacy note](resulttrail/docs/privacy-and-retention.md) explain the prototype and its limits. The experimental anomaly model did not meet its predeclared gate and is disabled. A demo video will be added before submission.
 
 **Artificial Intelligence for Electoral Innovation, Integrity and Inclusion**
 
