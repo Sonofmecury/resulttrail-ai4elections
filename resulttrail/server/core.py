@@ -175,9 +175,9 @@ class ResultData(BaseModel):
     rejected: StrictInt = Field(ge=0, le=10000)
     party_votes: dict[str, StrictInt] = Field(min_length=2, max_length=26)
     source_note: str = Field(max_length=200)
-    state: str | None = Field(default=None, max_length=60)
-    lga: str | None = Field(default=None, max_length=60)
-    ward: str | None = Field(default=None, max_length=60)
+    state: str = Field(min_length=1, max_length=60)
+    lga: str = Field(min_length=1, max_length=60)
+    ward: str = Field(min_length=1, max_length=60)
     capture: CaptureChecklist | None = None
 
     @field_validator("election_id", "unit_id")
@@ -196,8 +196,8 @@ class ResultData(BaseModel):
 
     @field_validator("state", "lga", "ward")
     @classmethod
-    def location_label(cls, value: str | None) -> str | None:
-        if value is not None and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 .'/&()-]{0,59}", value):
+    def location_label(cls, value: str) -> str:
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 .'/&()-]{0,59}", value):
             raise ValueError("Use a short location label")
         return value
 
@@ -353,6 +353,16 @@ def create_app(instance_path: Path | None = None) -> FastAPI:
                 raise HTTPException(409, "First version must be 1")
             if prev["v"] is not None and (prev["reporter"] != actor["alias"] or body.version != prev["v"] + 1):
                 raise HTTPException(409, "Only the original reporter can add the next version")
+            first_versions = db.execute(
+                "SELECT report_id,payload_json FROM result_version WHERE tenant=? AND version=1",
+                (actor["tenant"],),
+            ).fetchall()
+            for first in first_versions:
+                if first["report_id"] == report_id:
+                    if json.loads(first["payload_json"])["data"]["unit_id"] != body.data.unit_id:
+                        raise HTTPException(409, "A correction must retain its unit code")
+                elif json.loads(first["payload_json"])["data"]["unit_id"] == body.data.unit_id:
+                    raise HTTPException(409, "Unit code already belongs to another report")
             received_at = utc_now()
             receipt_body = {
                 "tenant": actor["tenant"], "report_id": report_id, "version": body.version,

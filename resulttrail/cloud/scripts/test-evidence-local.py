@@ -34,10 +34,17 @@ reporter_csrf = reporter[1]
 reviewer_csrf = reviewer[1]
 report_id = str(uuid.uuid4())
 declaration = {'digest':digest,'mime':'image/png','size':len(image)}
-data = {'election_id':'SIM-2027','unit_id':'SIM-UNIT-TEST','accredited':10,'cast':8,'valid':8,'rejected':0,'party_votes':{'A':5,'B':3},'source_note':'test'}
+data = {'election_id':'SIM-2027','unit_id':'SIM-UNIT-'+uuid.uuid4().hex[:24].upper(),'state':'Niger','lga':'Paikoro','ward':'Tunganmallam/Nikuchi','accredited':10,'cast':8,'valid':8,'rejected':0,'party_votes':{'A':5,'B':3},'source_note':'test'}
+for missing in ('state','lga','ward'):
+    invalid = dict(data)
+    invalid.pop(missing)
+    status, _ = call(reporter,'/results','POST',{'report_id':str(uuid.uuid4()),'version':1,'data':invalid},reporter_csrf)
+    assert status == 422, (missing,status)
 for version in (1,2):
     status, answer = call(reporter,'/results','POST',{'report_id':report_id,'version':version,'data':data,'evidence':declaration},reporter_csrf)
     assert status == 200 and answer['receipt']['body']['version'] == version, (status,answer)
+status, _ = call(reporter,'/results','POST',{'report_id':str(uuid.uuid4()),'version':1,'data':data},reporter_csrf)
+assert status == 409, status
 status, _ = call(reviewer,f'/review/{report_id}/decision','POST',{'version':2,'decision':'approved','note':'Test review'},reviewer_csrf)
 assert status == 409, status
 for version in (1,2):
@@ -69,4 +76,4 @@ status, answer = call(reviewer,f'/review/{report_id}/decision','POST',{'version'
 assert status == 200, (status,answer)
 status, _ = call(reviewer,field_path,'POST',{'field_key':'cast','outcome':'matches','note':'Checked image'},reviewer_csrf)
 assert status == 409, status
-print('PASS: receipt, prior-version upload, approval gate, metadata, replay, isolation, altered bytes, field history, final lock')
+print('PASS: required location, unique unit code, receipt, prior-version upload, approval gate, metadata, replay, isolation, altered bytes, field history, final lock')

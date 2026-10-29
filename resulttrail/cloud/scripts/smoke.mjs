@@ -24,7 +24,7 @@ async function login(user) {
 const health = await call('/health')
 if (health.result.storage !== 'D1') throw new Error('Wrong backend')
 const reporterAuth = await login(reporter), reviewerAuth = await login(reviewer)
-const payload = { report_id: crypto.randomUUID(), version: 1, data: { election_id: 'SIM-2027', unit_id: 'SIM-CLOUD-001', state: 'Lagos', lga: 'Ikeja', accredited: 120, cast: 100, valid: 97, rejected: 3, party_votes: { APC: 70, PDP: 20, LP: 7, NNPP: 0 }, source_note: 'Cloud smoke test' } }
+const payload = { report_id: crypto.randomUUID(), version: 1, data: { election_id: 'SIM-2027', unit_id: `SIM-CLOUD-${crypto.randomUUID().replaceAll('-', '').slice(0, 24).toUpperCase()}`, state: 'Lagos', lga: 'Ikeja', ward: 'Alausa', accredited: 120, cast: 100, valid: 97, rejected: 3, party_votes: { APC: 70, PDP: 20, LP: 7, NNPP: 0 }, source_note: 'Cloud smoke test' } }
 const first = (await call('/results', 'POST', payload, reporterAuth)).result
 if (first.replayed || first.receipt.body.digest !== digest(payload)) throw new Error('Receipt digest mismatch')
 const repeated = (await call('/results', 'POST', payload, reporterAuth)).result

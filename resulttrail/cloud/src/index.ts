@@ -46,7 +46,7 @@ function validateSubmission(input: Record<string, unknown>): Submission {
   fields(d, ['election_id', 'unit_id', 'accredited', 'cast', 'valid', 'rejected', 'party_votes', 'source_note', 'state', 'lga', 'ward', 'capture'])
   for (const key of ['election_id', 'unit_id']) if (typeof d[key] !== 'string' || !/^SIM-[A-Z0-9-]{1,36}$/.test(d[key] as string)) fail(422, 'Codes must begin with SIM-')
   if (typeof d.source_note !== 'string' || d.source_note.length > 200) fail(422, 'Invalid source note')
-  for (const key of ['state', 'lga', 'ward']) if (d[key] !== undefined && (typeof d[key] !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9 .'/&()-]{0,59}$/.test(d[key] as string))) fail(422, `Invalid ${key}`)
+  for (const key of ['state', 'lga', 'ward']) if (typeof d[key] !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9 .'/&()-]{0,59}$/.test(d[key] as string)) fail(422, `State, LGA and ward are required (invalid ${key})`)
   let capture: Result['capture']
   if (d.capture !== undefined) {
     if (!d.capture || typeof d.capture !== 'object' || Array.isArray(d.capture)) fail(422, 'Invalid capture checklist')
@@ -138,18 +138,24 @@ async function api(request: Request, env: Env): Promise<Response> {
     const receipt = { body: receiptBody, signature: await sign(env, receiptBody) }
     const inserted = await env.DB.prepare(`INSERT OR IGNORE INTO result_version(tenant,report_id,version,payload_json,digest,reporter,received_at,receipt_json)
       SELECT ?,?,?,?,?,?,?,? WHERE
-        (?=1 AND NOT EXISTS(SELECT 1 FROM result_version WHERE tenant=? AND report_id=?)) OR
+        (?=1 AND NOT EXISTS(SELECT 1 FROM result_version WHERE tenant=? AND report_id=?)
+         AND NOT EXISTS(SELECT 1 FROM result_version WHERE tenant=? AND version=1 AND json_extract(payload_json,'$.data.unit_id')=?)) OR
         (? > 1 AND (SELECT MAX(version) FROM result_version WHERE tenant=? AND report_id=?)=?
-         AND (SELECT reporter FROM result_version WHERE tenant=? AND report_id=? ORDER BY version DESC LIMIT 1)=?)`)
+         AND (SELECT reporter FROM result_version WHERE tenant=? AND report_id=? ORDER BY version DESC LIMIT 1)=?
+         AND (SELECT json_extract(payload_json,'$.data.unit_id') FROM result_version WHERE tenant=? AND report_id=? ORDER BY version DESC LIMIT 1)=?)`)
       .bind(user.tenant, submission.report_id, submission.version, payload_json, digest, user.alias, received_at, canonical(receipt),
         submission.version, user.tenant, submission.report_id,
+        user.tenant, submission.data.unit_id,
         submission.version, user.tenant, submission.report_id, submission.version - 1,
-        user.tenant, submission.report_id, user.alias).run()
+        user.tenant, submission.report_id, user.alias,
+        user.tenant, submission.report_id, submission.data.unit_id).run()
     if (inserted.meta.changes === 0) {
       const existing = await env.DB.prepare('SELECT digest,receipt_json,reporter FROM result_version WHERE tenant=? AND report_id=? AND version=?').bind(user.tenant, submission.report_id, submission.version).first<{ digest: string; receipt_json: string; reporter: string }>()
       if (existing && existing.reporter !== user.alias) fail(404, 'Result not found')
       if (existing && existing.digest === digest) return json({ receipt: JSON.parse(existing.receipt_json), replayed: true })
       if (existing) fail(409, 'This report/version already has different content')
+      const duplicateCode = await env.DB.prepare("SELECT 1 FROM result_version WHERE tenant=? AND version=1 AND json_extract(payload_json,'$.data.unit_id')=? AND report_id<>? LIMIT 1").bind(user.tenant, submission.data.unit_id, submission.report_id).first()
+      if (duplicateCode) fail(409, 'Unit code already belongs to another report')
       fail(409, 'Only the original reporter can add the next version')
     }
     return json({ receipt, replayed: false, flags: checks(submission.data) })

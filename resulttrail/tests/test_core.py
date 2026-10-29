@@ -33,7 +33,8 @@ def sample():
     return {
         "report_id": str(uuid.uuid4()), "version": 1,
         "data": {
-            "election_id": "SIM-2027", "unit_id": "SIM-UNIT-01",
+            "election_id": "SIM-2027", "unit_id": "SIM-UNIT-" + uuid.uuid4().hex[:24].upper(),
+            "state": "Niger", "lga": "Paikoro", "ward": "Tunganmallam/Nikuchi",
             "accredited": 120, "cast": 100, "valid": 97, "rejected": 3,
             "party_votes": {"A": 70, "B": 27}, "source_note": "Fictional exercise",
         },
@@ -146,6 +147,13 @@ def test_invalid_input_and_valid_low_cast(tmp_path):
     result = client.post("/api/results", json=body, headers={"X-CSRF-Token": csrf})
     assert result.status_code == 200
     assert result.json()["flags"] == []  # 100 cast is below 120 accredited and valid.
+    duplicate = sample()
+    duplicate["data"]["unit_id"] = body["data"]["unit_id"]
+    assert client.post("/api/results", json=duplicate, headers={"X-CSRF-Token": csrf}).status_code == 409
+    for field in ("state", "lga", "ward"):
+        bad = sample()
+        bad["data"].pop(field)
+        assert client.post("/api/results", json=bad, headers={"X-CSRF-Token": csrf}).status_code == 422
     bad = sample()
     bad["data"]["unit_id"] = "REAL-UNIT"
     assert client.post("/api/results", json=bad, headers={"X-CSRF-Token": csrf}).status_code == 422
