@@ -1,6 +1,6 @@
 # ResultTrail review assistant: delivery plan
 
-Status: implementation plan, 29 October 2026. No OCR or model ranking is live.
+Status: release 1 (offline encrypted image capture and signed declaration) deployed 29 October 2026. Reviewer field comparison, OCR and model ranking are not live.
 
 ## Product rule
 
