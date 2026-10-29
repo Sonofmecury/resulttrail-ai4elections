@@ -1,7 +1,8 @@
 type Env = { DB: D1Database; ASSETS: Fetcher; SIGNING_KEY_B64: string; PUBLIC_KEY_B64: string }
 type Actor = { alias: string; role: 'reporter' | 'reviewer'; tenant: string; csrf: string }
 type Result = { election_id: string; unit_id: string; accredited: number; cast: number; valid: number; rejected: number; party_votes: Record<string, number>; source_note: string; state?: string; lga?: string; ward?: string; capture?: { copy_seen: boolean; figures_compared: boolean; location_checked: boolean; recorded_at: string } }
-type Submission = { report_id: string; version: number; data: Result }
+type EvidenceDeclaration = { digest: string; mime: 'image/jpeg' | 'image/png' | 'image/webp'; size: number }
+type Submission = { report_id: string; version: number; data: Result; evidence?: EvidenceDeclaration }
 type VersionRow = { tenant: string; report_id: string; version: number; payload_json: string; digest: string; reporter: string; received_at: string; receipt_json: string }
 type ReviewRow = VersionRow & { review_decision: string | null; review_note: string | null; review_created_at: string | null; evidence_digest: string | null }
 const KEY_ID = 'cloud-v1'
@@ -36,7 +37,7 @@ function fields(value: Record<string, unknown>, allowed: string[]): void { if (O
 function uuid(value: unknown): string { if (typeof value !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) fail(422, 'Invalid report ID'); return value.toLowerCase() }
 function bounded(value: unknown, max = 10000): number { if (!Number.isSafeInteger(value) || (value as number) < 0 || (value as number) > max) fail(422, 'Invalid count'); return value as number }
 function validateSubmission(input: Record<string, unknown>): Submission {
-  fields(input, ['report_id', 'version', 'data'])
+  fields(input, ['report_id', 'version', 'data', 'evidence'])
   const report_id = uuid(input.report_id), version = bounded(input.version, 1000)
   if (version < 1) fail(422, 'Version must be positive')
   const raw = input.data
@@ -58,7 +59,15 @@ function validateSubmission(input: Record<string, unknown>): Submission {
   if (!parties || typeof parties !== 'object' || Array.isArray(parties)) fail(422, 'Invalid party votes')
   const entries = Object.entries(parties)
   if (entries.length < 2 || entries.length > 26 || entries.some(([key, count]) => !/^[A-Z][A-Z0-9-]{0,11}$/.test(key) || !Number.isSafeInteger(count) || (count as number) < 0 || (count as number) > 10000)) fail(422, 'Invalid party votes')
-  return { report_id, version, data: { election_id: d.election_id as string, unit_id: d.unit_id as string,
+  let evidence: EvidenceDeclaration | undefined
+  if (input.evidence !== undefined) {
+    if (!input.evidence || typeof input.evidence !== 'object' || Array.isArray(input.evidence)) fail(422, 'Invalid evidence declaration')
+    const e = input.evidence as Record<string, unknown>
+    fields(e, ['digest', 'mime', 'size'])
+    if (typeof e.digest !== 'string' || !/^[a-f0-9]{64}$/.test(e.digest) || !['image/jpeg', 'image/png', 'image/webp'].includes(e.mime as string) || !Number.isSafeInteger(e.size) || (e.size as number) < 1 || (e.size as number) > 750_000) fail(422, 'Invalid evidence declaration')
+    evidence = e as EvidenceDeclaration
+  }
+  return { report_id, version, ...(evidence ? { evidence } : {}), data: { election_id: d.election_id as string, unit_id: d.unit_id as string,
     accredited: bounded(d.accredited), cast: bounded(d.cast), valid: bounded(d.valid), rejected: bounded(d.rejected),
     party_votes: Object.fromEntries(entries) as Record<string, number>, source_note: d.source_note,
     ...(d.state ? { state: d.state as string } : {}), ...(d.lga ? { lga: d.lga as string } : {}), ...(d.ward ? { ward: d.ward as string } : {}), ...(capture ? { capture } : {}) } }
@@ -165,10 +174,13 @@ async function api(request: Request, env: Env): Promise<Response> {
   const evidenceMatch = /^\/api\/results\/([^/]+)\/evidence$/.exec(path)
   if (evidenceMatch && method === 'POST') {
     const user = await actor(request, env, true); role(user, 'reporter')
-    const id = uuid(evidenceMatch[1]), newest = await latest(env, user, id)
-    if (newest.reporter !== user.alias) fail(403, 'Only the original reporter can attach this image')
+    const id = uuid(evidenceMatch[1])
     const version = Number(url.searchParams.get('version'))
-    if (version !== newest.version) fail(409, 'Attach evidence to the latest version')
+    if (!Number.isSafeInteger(version) || version < 1) fail(422, 'Invalid version')
+    const target = await env.DB.prepare('SELECT payload_json,reporter FROM result_version WHERE tenant=? AND report_id=? AND version=?').bind(user.tenant,id,version).first<{ payload_json: string; reporter: string }>()
+    if (!target) fail(404, 'Result version not found')
+    if (target.reporter !== user.alias) fail(403, 'Only the original reporter can attach this image')
+    const declared = (JSON.parse(target.payload_json) as Submission).evidence
     const mime = request.headers.get('Content-Type')?.split(';')[0]?.toLowerCase() || ''
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(mime)) fail(415, 'Use a JPEG, PNG or WebP image')
     const length = Number(request.headers.get('Content-Length') || 0)
@@ -178,10 +190,12 @@ async function api(request: Request, env: Env): Promise<Response> {
     const valid = mime === 'image/jpeg' ? bytes[0] === 0xff && bytes[1] === 0xd8 : mime === 'image/png' ? bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 : bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46
     if (!valid) fail(422, 'Image content does not match its type')
     const digest = await hashBytes(bytes), uploaded_at = now()
+    if (declared && (declared.digest !== digest || declared.mime !== mime || declared.size !== bytes.length)) fail(409, 'Image does not match the signed declaration')
+    if (!declared && version !== (await latest(env, user, id)).version) fail(409, 'Legacy images can only be attached to the latest version')
     const signature = await sign(env, { tenant: user.tenant, report_id: id, version, digest, mime, size: bytes.length, uploaded_at, key_id: KEY_ID })
     const inserted = await env.DB.prepare(`INSERT OR IGNORE INTO evidence_photo(tenant,report_id,version,mime,size,digest,body_b64,uploaded_at,signature)
-      SELECT ?,?,?,?,?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM review_action WHERE tenant=? AND report_id=? AND version=?)`)
-      .bind(user.tenant, id, version, mime, bytes.length, digest, b64Large(bytes), uploaded_at, signature,user.tenant,id,version).run()
+      SELECT ?,?,?,?,?,?,?,?,? WHERE ?=1 OR NOT EXISTS(SELECT 1 FROM review_action WHERE tenant=? AND report_id=? AND version=? AND decision IN ('approved','needs_correction'))`)
+      .bind(user.tenant, id, version, mime, bytes.length, digest, b64Large(bytes), uploaded_at, signature,declared ? 1 : 0,user.tenant,id,version).run()
     if (inserted.meta.changes === 0) {
       const existing = await env.DB.prepare('SELECT digest,mime,size,uploaded_at,signature FROM evidence_photo WHERE tenant=? AND report_id=? AND version=?').bind(user.tenant, id, version).first<{ digest: string; mime: string; size: number; uploaded_at: string; signature: string }>()
       if (!existing) fail(409, 'This version has already been reviewed')
@@ -192,11 +206,13 @@ async function api(request: Request, env: Env): Promise<Response> {
   }
   if (evidenceMatch && method === 'GET') {
     const user = await actor(request, env), id = uuid(evidenceMatch[1]), newest = await latest(env, user, id)
+    if (user.role === 'reporter' && newest.reporter !== user.alias) fail(404, 'Evidence image not found')
     const version = Number(url.searchParams.get('version') || newest.version)
     if (!Number.isSafeInteger(version) || version < 1) fail(422, 'Invalid version')
-    const row = await env.DB.prepare('SELECT mime,body_b64,digest FROM evidence_photo WHERE tenant=? AND report_id=? AND version=?').bind(user.tenant, id, version).first<{ mime: string; body_b64: string; digest: string }>()
+    const row = await env.DB.prepare('SELECT mime,size,body_b64,digest FROM evidence_photo WHERE tenant=? AND report_id=? AND version=?').bind(user.tenant, id, version).first<{ mime: string; size: number; body_b64: string; digest: string }>()
+    if (url.searchParams.get('metadata') === '1') return json({ stored: Boolean(row), ...(row ? { digest: row.digest, mime: row.mime, size: row.size } : {}) })
     if (!row) fail(404, 'Evidence image not found')
-    return new Response(unb64(row.body_b64) as BodyInit, { headers: { 'Content-Type': row.mime, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'X-Evidence-SHA256': row.digest } })
+    return new Response(unb64(row.body_b64) as BodyInit, { headers: { 'Content-Type': row.mime, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "default-src 'none'; sandbox", 'X-Evidence-SHA256': row.digest } })
   }
   if (path === '/api/review' && method === 'GET') {
     const user = await actor(request, env); role(user, 'reviewer')
@@ -221,6 +237,13 @@ async function api(request: Request, env: Env): Promise<Response> {
     if (!['reviewed', 'approved', 'needs_correction'].includes(input.decision as string) || typeof input.note !== 'string' || input.note.trim().length < 2 || input.note.length > 500) fail(422, 'Invalid review decision')
     const version = bounded(input.version, 1000), newest = await latest(env, user, id)
     if (version !== newest.version) fail(409, 'A newer version needs review')
+    if (input.decision === 'approved') {
+      const declared = (JSON.parse(newest.payload_json) as Submission).evidence
+      if (declared) {
+        const stored = await env.DB.prepare('SELECT digest,mime,size FROM evidence_photo WHERE tenant=? AND report_id=? AND version=?').bind(user.tenant,id,version).first<EvidenceDeclaration>()
+        if (!stored || stored.digest !== declared.digest || stored.mime !== declared.mime || stored.size !== declared.size) fail(409, 'Declared image must be verified before approval')
+      }
+    }
     const result = await env.DB.prepare(`INSERT INTO review_action(tenant,report_id,version,reviewer,decision,note,created_at)
       SELECT ?,?,?,?,?,?,? WHERE ?=(SELECT MAX(version) FROM result_version WHERE tenant=? AND report_id=?)
         AND NOT EXISTS (SELECT 1 FROM review_action WHERE tenant=? AND report_id=? AND version=? AND decision IN ('approved','needs_correction'))`)

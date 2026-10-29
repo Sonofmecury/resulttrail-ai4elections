@@ -1,4 +1,4 @@
-import type { LocalRecord } from './types'
+import type { EvidenceDeclaration, LocalRecord } from './types'
 
 const DB_NAME = 'aegisrelay-synthetic-v1'
 const enc = new TextEncoder()
@@ -21,12 +21,13 @@ function randomBytes(length: number): Uint8Array {
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 2)
+    const request = indexedDB.open(DB_NAME, 3)
     request.onupgradeneeded = () => {
       const db = request.result
       if (!db.objectStoreNames.contains('vaults')) db.createObjectStore('vaults', { keyPath: 'alias' })
       if (!db.objectStoreNames.contains('records')) db.createObjectStore('records', { keyPath: 'id' })
       if (!db.objectStoreNames.contains('drafts')) db.createObjectStore('drafts', { keyPath: 'id' })
+      if (!db.objectStoreNames.contains('evidence')) db.createObjectStore('evidence', { keyPath: 'id' })
     }
     request.onsuccess = () => resolve(request.result)
     request.onerror = () => reject(request.error)
@@ -152,3 +153,27 @@ export async function loadDraft<T>(alias: string, key: CryptoKey): Promise<T | n
 
 export async function clearDraft(alias: string): Promise<void> { await remove('drafts', `${alias}|draft`) }
 export async function removeRecord(alias: string, record: LocalRecord): Promise<void> { await remove('records', recordId(alias, record)) }
+
+function evidenceId(alias: string, reportId: string, version: number): string { return `${alias}|${reportId}|${version}|evidence` }
+function encodeLarge(bytes: Uint8Array): string {
+  let value = ''
+  for (let offset = 0; offset < bytes.length; offset += 8192) value += String.fromCharCode(...bytes.subarray(offset, offset + 8192))
+  return btoa(value)
+}
+export async function saveEvidence(alias: string, key: CryptoKey, reportId: string, version: number, bytes: Uint8Array, declaration: EvidenceDeclaration): Promise<void> {
+  const id = evidenceId(alias, reportId, version), nonce = randomBytes(12)
+  const plaintext = enc.encode(JSON.stringify({ format: 1, declaration, bytes: encodeLarge(bytes) }))
+  const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce as BufferSource, additionalData: enc.encode(id) }, key, plaintext)
+  await write('evidence', { id, alias, nonce: encode(nonce), ciphertext: encodeLarge(new Uint8Array(ciphertext)) })
+}
+export async function loadEvidence(alias: string, key: CryptoKey, reportId: string, version: number): Promise<{ declaration: EvidenceDeclaration; bytes: Uint8Array } | null> {
+  const id = evidenceId(alias, reportId, version), envelope = await read<Envelope>('evidence', id)
+  if (!envelope) return null
+  try {
+    const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: decode(envelope.nonce) as BufferSource, additionalData: enc.encode(id) }, key, decode(envelope.ciphertext) as BufferSource)
+    const value = JSON.parse(dec.decode(plaintext)) as { format: number; declaration: EvidenceDeclaration; bytes: string }
+    if (value.format !== 1) throw new Error('Unsupported evidence format')
+    return { declaration: value.declaration, bytes: decode(value.bytes) }
+  } catch { throw new Error('Encrypted image cannot be restored; local evidence was kept') }
+}
+export async function removeEvidence(alias: string, reportId: string, version: number): Promise<void> { await remove('evidence', evidenceId(alias, reportId, version)) }

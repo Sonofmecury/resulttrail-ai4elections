@@ -13,12 +13,13 @@ export type ResultData = {
   capture?: { copy_seen: boolean; figures_compared: boolean; location_checked: boolean; recorded_at: string }
 }
 
-export type Submission = { report_id: string; version: number; data: ResultData }
+export type EvidenceDeclaration = { digest: string; mime: 'image/jpeg' | 'image/png' | 'image/webp'; size: number }
+export type Submission = { report_id: string; version: number; data: ResultData; evidence?: EvidenceDeclaration }
 export type Receipt = {
   body: { tenant: string; report_id: string; version: number; digest: string; received_at: string; key_id: string }
   signature: string
 }
-export type LocalRecord = { payload: Submission; state: 'queued' | 'received' | 'reviewed'; receipt?: Receipt; savedAt: string }
+export type LocalRecord = { payload: Submission; state: 'queued' | 'received' | 'reviewed'; receipt?: Receipt; savedAt: string; evidenceState?: 'pending' | 'verified' }
 export type Session = { alias: string; role: 'reporter' | 'reviewer'; tenant: string; csrf: string }
 export type ReviewItem = {
   report_id: string
