@@ -1,5 +1,6 @@
 client/node_modules/
 client/dist/
+client/public/ocr/
 .venv/
 __pycache__/
 .pytest_cache/
