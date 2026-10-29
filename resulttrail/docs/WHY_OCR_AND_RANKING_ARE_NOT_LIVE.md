@@ -22,6 +22,10 @@ The [OCR evaluation](ocr-evaluation.json) used 80 computer-rendered holdout shee
 
 The sheets were rendered by one generator. Although the holdout varied font, layout, rotation, blur, low light and glare, these effects were digitally applied, with very clean printed labels and a limited party format. The parser was designed for that format. It has not faced actual phone cameras, perspective distortion, shadows, handwriting, folds, compression, unfamiliar layouts, overlapping stamps, more party rows, or ambiguous source copies. A 100% score here must not be presented as a 100% field accuracy claim.
 
+Publicly available forms and receipts can supply a harder supplementary OCR test. The [public-document benchmark](PUBLIC_OCR_BENCHMARK.md) now provides a local SROIE runner and a FUNSD adapter for data obtained under its terms. Neither dataset contains ResultTrail's target result-sheet fields, so neither can by itself validate reporter suggestions or remove the need for independently photographed fictional sheets.
+
+On the first 100 SROIE test rows, high-confidence recognition in annotated numeric-only regions was 535 exact and 19 wrong, with 900 abstentions. That is materially less reassuring than the perfect result on our generated sheets, but it is still a receipt-region benchmark rather than an election-result-sheet assessment. Only one source image exceeded 750 KB, so this run does not justify changing the upload limit. The measured details and matching limitations are in [the benchmark report](PUBLIC_OCR_BENCHMARK.md).
+
 ### Remaining engineering and evidence work
 
 The reporter control is a prototype, not a complete OCR release. The reviewer-side provisional mismatch display and source-region highlight specified in the plan are not implemented. Image preprocessing, cropping and rotation controls are also not complete. The browser worker ran on a development machine; low-end phone latency, memory and offline-after-cache behaviour have not been measured. The source-image cap of 750 KB may also limit the readability of some photos; changing that limit would require a separate storage and upload assessment.

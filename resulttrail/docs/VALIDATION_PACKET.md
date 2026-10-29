@@ -2,6 +2,8 @@
 
 The current scripts test software plumbing only. Before enabling either feature on `resulttrail.ng`, collect a genuinely independent fictional validation set. Do not use official result sheets or personal data for this test.
 
+The separate [public-document benchmark](PUBLIC_OCR_BENCHMARK.md) can expose OCR and compression weaknesses on forms and receipts without paying for an AI API. Its images are supplementary and do not replace the result-sheet holdout below.
+
 ## OCR holdout
 
 1. Print or hand-create fictional sheets **outside** the corpus generator. Include different page layouts and party counts, then photograph them with several phone models in daylight, low light, blur, perspective tilt and glare. Keep the untouched originals and exact manually transcribed values. Do not train or tune the parser on these images after opening the holdout.
