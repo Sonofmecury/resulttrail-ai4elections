@@ -4,7 +4,7 @@ type Result = { election_id: string; unit_id: string; accredited: number; cast: 
 type EvidenceDeclaration = { digest: string; mime: 'image/jpeg' | 'image/png' | 'image/webp'; size: number }
 type Submission = { report_id: string; version: number; data: Result; evidence?: EvidenceDeclaration }
 type VersionRow = { tenant: string; report_id: string; version: number; payload_json: string; digest: string; reporter: string; received_at: string; receipt_json: string }
-type ReviewRow = VersionRow & { review_decision: string | null; review_note: string | null; review_created_at: string | null; evidence_digest: string | null }
+type ReviewRow = VersionRow & { review_decision: string | null; review_note: string | null; review_created_at: string | null; evidence_digest: string | null; duplicate_image_reports: number }
 const KEY_ID = 'cloud-v1'
 const encoder = new TextEncoder()
 
@@ -216,7 +216,8 @@ async function api(request: Request, env: Env): Promise<Response> {
   }
   if (path === '/api/review' && method === 'GET') {
     const user = await actor(request, env); role(user, 'reviewer')
-    const rows = await env.DB.prepare(`SELECT r.*, a.decision AS review_decision,a.note AS review_note,a.created_at AS review_created_at,e.digest AS evidence_digest
+    const rows = await env.DB.prepare(`SELECT r.*, a.decision AS review_decision,a.note AS review_note,a.created_at AS review_created_at,e.digest AS evidence_digest,
+      (SELECT COUNT(DISTINCT z.report_id) FROM evidence_photo z WHERE z.tenant=r.tenant AND z.digest=e.digest AND z.report_id<>r.report_id) AS duplicate_image_reports
       FROM result_version r LEFT JOIN review_action a ON a.id=(SELECT MAX(z.id) FROM review_action z WHERE z.tenant=r.tenant AND z.report_id=r.report_id AND z.version=r.version)
       LEFT JOIN evidence_photo e ON e.tenant=r.tenant AND e.report_id=r.report_id AND e.version=r.version
       WHERE r.tenant=? AND r.version=(SELECT MAX(x.version) FROM result_version x WHERE x.tenant=r.tenant AND x.report_id=r.report_id)
@@ -225,9 +226,38 @@ async function api(request: Request, env: Env): Promise<Response> {
     for (const row of rows.results) {
       const review = row.review_decision ? { decision: row.review_decision, note: row.review_note, created_at: row.review_created_at } : null
       const payload = JSON.parse(row.payload_json) as Submission
-      items.push({ report_id: row.report_id, version: row.version, payload, receipt: JSON.parse(row.receipt_json), flags: checks(payload.data), review, received_at: row.received_at, evidence_digest: row.evidence_digest })
+      items.push({ report_id: row.report_id, version: row.version, payload, receipt: JSON.parse(row.receipt_json), flags: checks(payload.data), review, received_at: row.received_at, evidence_digest: row.evidence_digest, duplicate_image_reports: row.duplicate_image_reports })
     }
     return json({ items })
+  }
+  const fieldReview = /^\/api\/review\/([^/]+)\/fields$/.exec(path)
+  if (fieldReview && (method === 'GET' || method === 'POST')) {
+    const user = await actor(request, env, method === 'POST'); role(user, 'reviewer')
+    const id = uuid(fieldReview[1]), version = Number(url.searchParams.get('version'))
+    if (!Number.isSafeInteger(version) || version < 1) fail(422, 'Invalid version')
+    const target = await env.DB.prepare('SELECT payload_json FROM result_version WHERE tenant=? AND report_id=? AND version=?').bind(user.tenant,id,version).first<{payload_json:string}>()
+    if (!target) fail(404, 'Result version not found')
+    if (method === 'GET') {
+      const actions = await env.DB.prepare('SELECT id,field_key,outcome,note,reviewer,created_at,previous_event_id FROM field_review_action WHERE tenant=? AND report_id=? AND version=? ORDER BY id').bind(user.tenant,id,version).all()
+      return json({ actions: actions.results })
+    }
+    const input = await readBody(request); fields(input, ['field_key','outcome','note'])
+    const data = (JSON.parse(target.payload_json) as Submission).data
+    const allowed = new Set(['accredited','cast','valid','rejected',...Object.keys(data.party_votes).map(code => `party:${code}`)])
+    if (typeof input.field_key !== 'string' || !allowed.has(input.field_key)) fail(422, 'Unknown result field')
+    if (!['not_compared','matches','possible_mismatch','cannot_read'].includes(input.outcome as string)) fail(422, 'Invalid comparison outcome')
+    if (typeof input.note !== 'string' || input.note.length > 300 || (input.outcome !== 'not_compared' && input.outcome !== 'matches' && input.note.trim().length < 2)) fail(422, 'Add a short comparison note')
+    if (input.outcome !== 'not_compared') {
+      const image = await env.DB.prepare('SELECT 1 AS present FROM evidence_photo WHERE tenant=? AND report_id=? AND version=?').bind(user.tenant,id,version).first()
+      if (!image) fail(409, 'Attach a source image before comparing its figures')
+    }
+    const final = await env.DB.prepare("SELECT decision FROM review_action WHERE tenant=? AND report_id=? AND version=? AND decision IN ('approved','needs_correction') ORDER BY id DESC LIMIT 1").bind(user.tenant,id,version).first()
+    if (final) fail(409, 'Final review decision already recorded')
+    const previous = await env.DB.prepare('SELECT id FROM field_review_action WHERE tenant=? AND report_id=? AND version=? ORDER BY id DESC LIMIT 1').bind(user.tenant,id,version).first<{id:number}>()
+    const created_at = now()
+    const inserted = await env.DB.prepare('INSERT INTO field_review_action(tenant,report_id,version,field_key,outcome,note,reviewer,created_at,previous_event_id) VALUES(?,?,?,?,?,?,?,?,?)')
+      .bind(user.tenant,id,version,input.field_key,input.outcome,(input.note as string).trim(),user.alias,created_at,previous?.id ?? null).run()
+    return json({ ok: true, event_id: inserted.meta.last_row_id, previous_event_id: previous?.id ?? null, created_at })
   }
   const decision = /^\/api\/review\/([^/]+)\/decision$/.exec(path)
   if (decision && method === 'POST') {

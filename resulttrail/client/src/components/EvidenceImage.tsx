@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 type State = { key: string; url?: string; error?: string; digest?: string }
 
 export function EvidenceImage({ reportId, version, expectedDigest, unitId }: { reportId: string; version: number; expectedDigest: string; unitId: string }) {
   const key = `${reportId}/${version}/${expectedDigest}`
   const [state, setState] = useState<State | null>(null)
+  const dialog = useRef<HTMLDialogElement>(null)
+  const [zoom, setZoom] = useState(1)
   useEffect(() => {
     let active = true, objectUrl: string | undefined
     async function load() {
@@ -25,5 +27,5 @@ export function EvidenceImage({ reportId, version, expectedDigest, unitId }: { r
   }, [key, reportId, version, expectedDigest])
   if (state?.key !== key) return <p className="empty-inline">Checking source image…</p>
   if (state.error) return <p className="error" role="alert">{state.error}</p>
-  return <div className="evidence-preview"><img src={state.url} alt={`Source for ${unitId}`} /><div className="image-tools"><span>Original image hash verified · {state.digest?.slice(0, 16)}…</span><a className="quiet" href={state.url} download={`resulttrail-${unitId}-v${version}`}>Download original</a></div></div>
+  return <div className="evidence-preview"><img src={state.url} alt={`Source for ${unitId}`} /><div className="image-tools"><span>Original image hash verified · {state.digest?.slice(0, 16)}…</span><button className="quiet" type="button" onClick={() => { setZoom(1); dialog.current?.showModal() }}>Zoom image</button><a className="quiet" href={state.url} download={`resulttrail-${unitId}-v${version}`}>Download original</a></div><dialog ref={dialog} className="image-dialog" aria-label={`Zoomed source image for ${unitId}`}><div className="image-dialog-toolbar"><strong>{unitId} · version {version}</strong><div><button className="quiet" type="button" onClick={() => setZoom(value => Math.max(1, value - .5))}>− Zoom</button><span aria-live="polite">{Math.round(zoom * 100)}%</span><button className="quiet" type="button" onClick={() => setZoom(value => Math.min(4, value + .5))}>+ Zoom</button><button className="quiet" type="button" onClick={() => dialog.current?.close()}>Close</button></div></div><div className="image-dialog-viewport"><img src={state.url} alt={`Enlarged source for ${unitId}`} style={{ width: `${zoom * 100}%` }} /></div></dialog></div>
 }

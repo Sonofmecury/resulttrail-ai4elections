@@ -54,6 +54,19 @@ status, _ = call(other,f'/results/{report_id}/evidence?version=1','POST',image,o
 assert status in (403,404), status
 status, _ = call(reporter,f'/results/{report_id}/evidence?version=1','POST',image+b'x',reporter_csrf,'image/png')
 assert status == 409, status
+field_path=f'/review/{report_id}/fields?version=2'
+status, answer = call(reviewer,field_path)
+assert status == 200 and answer['actions'] == [], (status,answer)
+status, _ = call(other,field_path)
+assert status == 403, status
+status, answer = call(reviewer,field_path,'POST',{'field_key':'party:A','outcome':'possible_mismatch','note':'Check printed figure'},reviewer_csrf)
+assert status == 200 and answer['previous_event_id'] is None, (status,answer)
+status, answer = call(reviewer,field_path,'POST',{'field_key':'party:A','outcome':'matches','note':'Figure confirmed on image'},reviewer_csrf)
+assert status == 200 and answer['previous_event_id'] is not None, (status,answer)
+status, answer = call(reviewer,field_path)
+assert status == 200 and len(answer['actions']) == 2 and answer['actions'][1]['previous_event_id'] == answer['actions'][0]['id'], (status,answer)
 status, answer = call(reviewer,f'/review/{report_id}/decision','POST',{'version':2,'decision':'approved','note':'Test review'},reviewer_csrf)
 assert status == 200, (status,answer)
-print('PASS: receipt, prior-version upload, missing-image approval gate, metadata, replay, isolation, altered bytes, approval')
+status, _ = call(reviewer,field_path,'POST',{'field_key':'cast','outcome':'matches','note':'Checked image'},reviewer_csrf)
+assert status == 409, status
+print('PASS: receipt, prior-version upload, approval gate, metadata, replay, isolation, altered bytes, field history, final lock')

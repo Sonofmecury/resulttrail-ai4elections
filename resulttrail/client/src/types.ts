@@ -29,5 +29,6 @@ export type ReviewItem = {
   flags: string[]
   received_at: string
   evidence_digest?: string | null
+  duplicate_image_reports?: number
   review: null | { decision: string; note: string; created_at: string }
 }
