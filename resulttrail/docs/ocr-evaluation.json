@@ -6,10 +6,11 @@
   "high_confidence_suggestions": 480,
   "correct": 480,
   "precision": 1,
+  "precision_wilson_lower_95": 0.9920602114410997,
   "field_exact_match": 0.8571428571428571,
   "abstention": 0.1428571428571429,
-  "p95_latency_ms": 386,
-  "peak_process_rss_bytes": 102248448,
+  "p95_latency_ms": 371,
+  "peak_process_rss_bytes": 110350336,
   "by_condition": {
     "blur": {
       "sheets": 16,

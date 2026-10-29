@@ -24,6 +24,9 @@ try {
 } finally { await worker.terminate() }
 const sum = (key, group = details) => group.reduce((value, row) => value + row[key], 0)
 const suggested = sum('suggested'), correct = sum('correct'), available = sum('available')
+const z = 1.96
+const p = suggested ? correct / suggested : 0
+const wilsonLower = suggested ? (p + z * z / (2 * suggested) - z * Math.sqrt(p * (1 - p) / suggested + z * z / (4 * suggested * suggested))) / (1 + z * z / suggested) : null
 const sortedLatency = details.map(row => row.latency_ms).sort((a, b) => a - b)
 const byCondition = Object.fromEntries([...new Set(details.map(row => row.condition))].sort().map(condition => {
   const group = details.filter(row => row.condition === condition)
@@ -51,7 +54,8 @@ for (const [index, row] of rows.entries()) {
 }
 const output = { version: 'ocr-printed-v1', corpus_seed: manifest.seed, sheets: details.length,
   fields_available: available, high_confidence_suggestions: suggested, correct,
-  precision: suggested ? correct / suggested : null, field_exact_match: correct / available,
+  precision: suggested ? correct / suggested : null, precision_wilson_lower_95: wilsonLower,
+  field_exact_match: correct / available,
   abstention: 1 - suggested / available,
   p95_latency_ms: sortedLatency[Math.ceil(sortedLatency.length * .95) - 1],
   peak_process_rss_bytes: process.memoryUsage().rss, by_condition: byCondition, by_layout: byLayout,
