@@ -1,5 +1,7 @@
 client/node_modules/
 client/dist/
+client/public/ocr/
+eng.traineddata
 .venv/
 __pycache__/
 .pytest_cache/

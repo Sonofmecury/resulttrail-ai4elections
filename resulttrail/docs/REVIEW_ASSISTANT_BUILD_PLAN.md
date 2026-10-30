@@ -1,6 +1,6 @@
 # ResultTrail review assistant: delivery plan
 
-Status: releases 1 and 2 (offline encrypted image capture, signed declaration and human field comparison) deployed 29 October 2026. OCR and model ranking are not live.
+Status: releases 1 and 2 (offline encrypted image capture, signed declaration and human field comparison) deployed 29 October 2026. Release 3 has a flagged local OCR prototype, rendered-sheet benchmark and supplementary public-document benchmark; Release 4 has a fictional ranking benchmark. Neither passed its release gate or is live. Historical source audit is recorded in `HISTORICAL_CONTEXT_AUDIT.md`. See `PUBLIC_OCR_BENCHMARK.md` for the SROIE size experiment and FUNSD adapter.
 
 ## Product rule
 
@@ -35,7 +35,7 @@ Acceptance: reviewer can inspect every entered field against the attached image 
 
 - Bundle pinned Tesseract.js worker, WASM core and language assets with the site; load only when the user asks. OCR runs on the device after assets are cached and sends no image to an AI service.
 - Start with a supported fictional printed result-sheet layout. Crop/rotate/contrast in memory for recognition while retaining the original image unchanged. Map recognised text to field names and bounding boxes. Reject ambiguous mappings and non-integer values.
-- Reporter suggestions require explicit accept/edit per field. Reviewer mismatch suggestions show both values and the highlighted source region; they do not alter or decide a record.
+- Reporter suggestions require explicit accept/edit per field. The generated `SIM-UNIT` record code must never be suggested or overwritten by OCR; it is not an INEC polling-unit identifier. Reviewer mismatch suggestions show both values and the highlighted source region; they do not alter or decide a record.
 - Build a labelled fictional image corpus with held-out sheets, layouts, devices, blur, glare and low light. Measure field exact-match, high-confidence numeric suggestion precision, abstention, mismatch precision/recall, latency, memory and manual-entry time. Confidence is not the probability that the source is true.
 - Enable the control only if high-confidence numeric suggestions achieve at least 99% precision on a sufficiently large independent untouched holdout and a small consented usability test shows no increase in accepted errors. Faster entry is secondary. Manual entry remains complete with OCR disabled. Otherwise retain manual review and publish the failures.
 

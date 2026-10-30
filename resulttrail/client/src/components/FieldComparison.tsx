@@ -6,7 +6,7 @@ type Outcome = 'not_compared' | 'matches' | 'possible_mismatch' | 'cannot_read'
 type Action = { id: number; field_key: string; outcome: Outcome; note: string; reviewer: string; created_at: string; previous_event_id: number | null }
 const labels: Record<Outcome, string> = { not_compared: 'Not compared', matches: 'Matches image', possible_mismatch: 'Possible mismatch', cannot_read: 'Cannot read' }
 
-export function FieldComparison({ item, session }: { item: ReviewItem; session: Session }) {
+export function FieldComparison({ item, session, refreshKey = 0 }: { item: ReviewItem; session: Session; refreshKey?: number }) {
   const [actions, setActions] = useState<Action[]>([])
   const [choices, setChoices] = useState<Record<string, Outcome>>({})
   const [notes, setNotes] = useState<Record<string, string>>({})
@@ -22,7 +22,6 @@ export function FieldComparison({ item, session }: { item: ReviewItem; session: 
   const key = `${item.report_id}/${item.version}`
   useEffect(() => {
     let active = true
-    setActions([]); setChoices({}); setNotes({}); setMessage('')
     void request<{ actions: Action[] }>(`/review/${item.report_id}/fields?version=${item.version}`)
       .then(value => {
         if (!active) return
@@ -32,7 +31,7 @@ export function FieldComparison({ item, session }: { item: ReviewItem; session: 
         setNotes(Object.fromEntries([...latest].map(([field, action]) => [field, action.note])))
       }).catch(error => { if (active) setMessage((error as Error).message) })
     return () => { active = false }
-  }, [key, item.report_id, item.version])
+  }, [key, item.report_id, item.version, refreshKey])
   const latest = new Map(actions.map(action => [action.field_key, action]))
   const locked = item.review?.decision === 'approved' || item.review?.decision === 'needs_correction'
   async function save(field: string) {

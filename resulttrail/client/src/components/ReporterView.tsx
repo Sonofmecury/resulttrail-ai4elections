@@ -3,6 +3,8 @@ import { request, verifyReceipt } from '../api'
 import { clearDraft, listRecords, loadDraft, loadEvidence, removeEvidence, removeRecord, saveDraft, saveEvidence, saveRecord, unlockVault, vaultExists } from '../storage'
 import { STATES } from '../geo'
 import type { EvidenceDeclaration, LocalRecord, ResultData, Session, Submission } from '../types'
+import { ocrDemoEnabled } from '../experiments'
+import { ReporterOcr } from './ReporterOcr'
 
 type Props = { session: Session; offlineOnly: boolean }
 type ServerRecord = { report_id: string; version: number; unit_id: string; digest: string; received_at: string; review_decision: string | null; review_note: string | null; review_created_at: string | null }
@@ -160,6 +162,23 @@ export function ReporterView({ session, offlineOnly }: Props) {
     await removeEvidence(session.alias, correction?.id ?? draftId, correction?.next ?? 1)
     setEvidence(null); setImageError(''); setDraftTouched(true); setDraftStatus('Image removed from this device')
   }
+  async function loadOriginalOcr(): Promise<Blob> {
+    if (!key.current || !evidence) throw new Error('Unlock the queue and attach an image first')
+    const local = await loadEvidence(session.alias, key.current, correction?.id ?? draftId, correction?.next ?? 1)
+    if (!local || local.declaration.digest !== evidence.digest) throw new Error('The encrypted original is unavailable on this device')
+    return new Blob([local.bytes as BlobPart], { type: evidence.mime })
+  }
+  function acceptOcr(field: string, value: number): string | null {
+    if (field.startsWith('party:')) {
+      const code = field.slice(6)
+      const existing = form.parties.find(row => row.code === code)
+      if (!existing) return `Add party ${code} first, then compare its proposed score.`
+      editParty(existing.id, 'votes', String(value))
+    } else if (['accredited', 'cast', 'valid', 'rejected'].includes(field)) {
+      edit(field as 'accredited' | 'cast' | 'valid' | 'rejected', String(value))
+    } else return 'This field is not supported by the reporter form.'
+    return null
+  }
   async function syncEvidence(item: LocalRecord): Promise<boolean> {
     if (!key.current || !item.payload.evidence) return true
     const declared = item.payload.evidence
@@ -273,6 +292,7 @@ export function ReporterView({ session, offlineOnly }: Props) {
         <fieldset><legend>Vote totals</legend><div className="field-grid">{(['accredited', 'cast', 'valid', 'rejected'] as const).map(name => <label key={name}>{name === 'cast' ? 'Votes cast' : name[0].toUpperCase() + name.slice(1)}<input inputMode="numeric" type="number" min="0" max="10000" value={form[name]} onChange={e => edit(name, e.target.value)} required /></label>)}</div></fieldset>
         <fieldset><legend>Party scores</legend><p className="help party-help">Use the abbreviations shown on the result copy. Add every party with a recorded score.</p><div className="party-rows">{form.parties.map((party, index) => <div className="party-entry" key={party.id}><label>Party code<input aria-label={`Party code ${index + 1}`} value={party.code} onChange={e => editParty(party.id, 'code', e.target.value)} maxLength={12} placeholder="e.g. APC" required /></label><label>Votes<input aria-label={`Votes for party ${party.code || index + 1}`} inputMode="numeric" type="number" min="0" max="10000" value={party.votes} onChange={e => editParty(party.id, 'votes', e.target.value)} required /></label><button type="button" className="quiet party-remove" onClick={() => removeParty(party.id)} disabled={form.parties.length <= 2} aria-label={`Remove party ${party.code || index + 1}`}>Remove</button></div>)}</div><button type="button" className="quiet party-add" onClick={addParty} disabled={form.parties.length >= 26}>+ Add party</button></fieldset>
         <fieldset><legend>Source context</legend><label>Source note · optional<textarea value={form.source_note} onChange={e => edit('source_note', e.target.value)} maxLength={200} rows={3} placeholder="Describe the source copy" /></label><div className="attachment-area"><span className="attachment-heading">Source image · optional</span><label className="photo-action"><PaperclipIcon /><span>{evidence ? 'Replace source image' : 'Attach source image'}</span><input type="file" accept="image/jpeg,image/png,image/webp" aria-label={evidence ? 'Replace source image' : 'Attach source image'} onChange={e => { void selectEvidence(e.target.files?.[0]); e.target.value = '' }} /></label><p className="attachment-hint">Choose an image from your device.</p>{imageError && <p className="attachment-error" role="alert">{imageError}</p>}</div>{evidencePreview && <img src={evidencePreview} alt="Selected source image preview" style={{ display: 'block', maxWidth: '100%', maxHeight: 280, marginTop: 12, borderRadius: 12 }} />}{evidence && <div className="help">Original encrypted on this device · {(evidence.size / 1000).toFixed(0)} KB · SHA-256 {evidence.digest.slice(0, 16)}… <button type="button" className="text-button" onClick={() => void discardDraftEvidence()}>Remove image</button></div>}<p className="help">JPEG, PNG or WebP, up to 750 KB. Original bytes, including embedded metadata, are preserved. Unsynced images can be lost if this device or browser storage is lost.</p></fieldset>
+        {ocrDemoEnabled(session) && evidence && <ReporterOcr key={`${draftId}/${correction?.next ?? 1}/${evidence.digest}`} originalUrl={evidencePreview} loadOriginal={loadOriginalOcr} onAccept={acceptOcr} />}
         <fieldset className="capture-checklist"><legend>Evidence checks</legend><p className="help">{checklistCount} of 3 complete. Confirm these against the source before continuing. The device time is recorded when you save.</p><label><input type="checkbox" checked={form.copy_seen} onChange={e => edit('copy_seen', e.target.checked)} />I have seen the result copy I am recording.</label><label><input type="checkbox" checked={form.figures_compared} onChange={e => edit('figures_compared', e.target.checked)} />I compared every total and party score with that copy.</label><label><input type="checkbox" checked={form.location_checked} onChange={e => edit('location_checked', e.target.checked)} />I checked the generated unit code, state, LGA and ward.</label></fieldset>
         <div className="form-actions"><button className="primary" disabled={busy}>Review figures</button>{correction && <button type="button" className="quiet" onClick={() => { if (evidence) void removeEvidence(session.alias, correction.id, correction.next); setCorrection(null); setForm(newForm()); setEvidence(null); setDraftId(crypto.randomUUID()); setDraftTouched(false); void clearDraft(session.alias) }}>Cancel correction</button>}</div>
       </form>}</section>}
