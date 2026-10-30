@@ -3,7 +3,8 @@ import { request, verifyReceipt } from '../api'
 import { clearDraft, listRecords, loadDraft, loadEvidence, removeEvidence, removeRecord, saveDraft, saveEvidence, saveRecord, unlockVault, vaultExists } from '../storage'
 import { STATES } from '../geo'
 import type { EvidenceDeclaration, LocalRecord, ResultData, Session, Submission } from '../types'
-import type { Suggestion } from '../ocr/parseTsv'
+import { ocrDemoEnabled } from '../experiments'
+import { ReporterOcr } from './ReporterOcr'
 
 type Props = { session: Session; offlineOnly: boolean }
 type ServerRecord = { report_id: string; version: number; unit_id: string; digest: string; received_at: string; review_decision: string | null; review_note: string | null; review_created_at: string | null }
@@ -57,7 +58,6 @@ export function ReporterView({ session, offlineOnly }: Props) {
   const [draftId, setDraftId] = useState<string>(() => crypto.randomUUID()), [evidence, setEvidence] = useState<EvidenceDeclaration | null>(null)
   const [evidencePreview, setEvidencePreview] = useState<string | null>(null)
   const [imageError, setImageError] = useState(''), [uploadError, setUploadError] = useState<{ reportId: string; text: string } | null>(null)
-  const [ocrSuggestions, setOcrSuggestions] = useState<Suggestion[]>([]), [ocrBusy, setOcrBusy] = useState(false), [ocrError, setOcrError] = useState('')
   const [screen, setScreen] = useState<Screen>('home'), [reviewing, setReviewing] = useState(false)
   const [draftTouched, setDraftTouched] = useState(false), [draftStatus, setDraftStatus] = useState('')
   const [lgaIndex, setLgaIndex] = useState<LgaIndex | null>(null), [wardIndex, setWardIndex] = useState<WardIndex | null>(null)
@@ -155,38 +155,29 @@ export function ReporterView({ session, offlineOnly }: Props) {
       const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes as BufferSource)), byte => byte.toString(16).padStart(2, '0')).join('')
       const declaration = { digest, mime: file.type as EvidenceDeclaration['mime'], size: bytes.length }
       await saveEvidence(session.alias, key.current, correction?.id ?? draftId, correction?.next ?? 1, bytes, declaration)
-      setEvidence(declaration); setOcrSuggestions([]); setOcrError(''); setDraftTouched(true); setDraftStatus('Image encrypted on this device')
+      setEvidence(declaration); setDraftTouched(true); setDraftStatus('Image encrypted on this device')
     } catch (error) { setImageError((error as Error).message) }
   }
   async function discardDraftEvidence() {
     await removeEvidence(session.alias, correction?.id ?? draftId, correction?.next ?? 1)
-    setEvidence(null); setImageError(''); setOcrSuggestions([]); setOcrError(''); setDraftTouched(true); setDraftStatus('Image removed from this device')
+    setEvidence(null); setImageError(''); setDraftTouched(true); setDraftStatus('Image removed from this device')
   }
-  async function suggestFromImage() {
-    if (!key.current || !evidence) return
-    setOcrBusy(true); setOcrError(''); setOcrSuggestions([])
-    let worker: Awaited<ReturnType<typeof import('tesseract.js').createWorker>> | undefined
-    try {
-      const local = await loadEvidence(session.alias, key.current, correction?.id ?? draftId, correction?.next ?? 1)
-      if (!local) throw new Error('The encrypted image is unavailable on this device.')
-      const { default: Tesseract } = await import('tesseract.js')
-      const { parsePrintedResultTsv } = await import('../ocr/parseTsv')
-      worker = await Tesseract.createWorker('eng', 1, { workerPath: '/ocr/worker.min.js', corePath: '/ocr', langPath: '/ocr', workerBlobURL: false })
-      const result = await worker.recognize(new Blob([local.bytes as BlobPart], { type: evidence.mime }), {}, { tsv: true })
-      setOcrSuggestions(parsePrintedResultTsv(result.data.tsv ?? ''))
-    } catch (error) { setOcrError((error as Error).message) }
-    finally { if (worker) await worker.terminate(); setOcrBusy(false) }
+  async function loadOriginalOcr(): Promise<Blob> {
+    if (!key.current || !evidence) throw new Error('Unlock the queue and attach an image first')
+    const local = await loadEvidence(session.alias, key.current, correction?.id ?? draftId, correction?.next ?? 1)
+    if (!local || local.declaration.digest !== evidence.digest) throw new Error('The encrypted original is unavailable on this device')
+    return new Blob([local.bytes as BlobPart], { type: evidence.mime })
   }
-  function acceptOcr(suggestion: Suggestion) {
-    if (suggestion.field.startsWith('party:')) {
-      const code = suggestion.field.slice(6)
+  function acceptOcr(field: string, value: number): string | null {
+    if (field.startsWith('party:')) {
+      const code = field.slice(6)
       const existing = form.parties.find(row => row.code === code)
-      if (!existing) { setOcrError(`Add party ${code} first, then compare its proposed score.`); return }
-      editParty(existing.id, 'votes', String(suggestion.value))
-    } else if (['accredited', 'cast', 'valid', 'rejected'].includes(suggestion.field)) {
-      edit(suggestion.field as 'accredited' | 'cast' | 'valid' | 'rejected', String(suggestion.value))
-    }
-    setOcrSuggestions(previous => previous.filter(item => item.field !== suggestion.field))
+      if (!existing) return `Add party ${code} first, then compare its proposed score.`
+      editParty(existing.id, 'votes', String(value))
+    } else if (['accredited', 'cast', 'valid', 'rejected'].includes(field)) {
+      edit(field as 'accredited' | 'cast' | 'valid' | 'rejected', String(value))
+    } else return 'This field is not supported by the reporter form.'
+    return null
   }
   async function syncEvidence(item: LocalRecord): Promise<boolean> {
     if (!key.current || !item.payload.evidence) return true
@@ -301,7 +292,8 @@ export function ReporterView({ session, offlineOnly }: Props) {
         <fieldset><legend>Vote totals</legend><div className="field-grid">{(['accredited', 'cast', 'valid', 'rejected'] as const).map(name => <label key={name}>{name === 'cast' ? 'Votes cast' : name[0].toUpperCase() + name.slice(1)}<input inputMode="numeric" type="number" min="0" max="10000" value={form[name]} onChange={e => edit(name, e.target.value)} required /></label>)}</div></fieldset>
         <fieldset><legend>Party scores</legend><p className="help party-help">Use the abbreviations shown on the result copy. Add every party with a recorded score.</p><div className="party-rows">{form.parties.map((party, index) => <div className="party-entry" key={party.id}><label>Party code<input aria-label={`Party code ${index + 1}`} value={party.code} onChange={e => editParty(party.id, 'code', e.target.value)} maxLength={12} placeholder="e.g. APC" required /></label><label>Votes<input aria-label={`Votes for party ${party.code || index + 1}`} inputMode="numeric" type="number" min="0" max="10000" value={party.votes} onChange={e => editParty(party.id, 'votes', e.target.value)} required /></label><button type="button" className="quiet party-remove" onClick={() => removeParty(party.id)} disabled={form.parties.length <= 2} aria-label={`Remove party ${party.code || index + 1}`}>Remove</button></div>)}</div><button type="button" className="quiet party-add" onClick={addParty} disabled={form.parties.length >= 26}>+ Add party</button></fieldset>
         <fieldset><legend>Source context</legend><label>Source note · optional<textarea value={form.source_note} onChange={e => edit('source_note', e.target.value)} maxLength={200} rows={3} placeholder="Describe the source copy" /></label><div className="attachment-area"><span className="attachment-heading">Source image · optional</span><label className="photo-action"><PaperclipIcon /><span>{evidence ? 'Replace source image' : 'Attach source image'}</span><input type="file" accept="image/jpeg,image/png,image/webp" aria-label={evidence ? 'Replace source image' : 'Attach source image'} onChange={e => { void selectEvidence(e.target.files?.[0]); e.target.value = '' }} /></label><p className="attachment-hint">Choose an image from your device.</p>{imageError && <p className="attachment-error" role="alert">{imageError}</p>}</div>{evidencePreview && <img src={evidencePreview} alt="Selected source image preview" style={{ display: 'block', maxWidth: '100%', maxHeight: 280, marginTop: 12, borderRadius: 12 }} />}{evidence && <div className="help">Original encrypted on this device · {(evidence.size / 1000).toFixed(0)} KB · SHA-256 {evidence.digest.slice(0, 16)}… <button type="button" className="text-button" onClick={() => void discardDraftEvidence()}>Remove image</button></div>}<p className="help">JPEG, PNG or WebP, up to 750 KB. Original bytes, including embedded metadata, are preserved. Unsynced images can be lost if this device or browser storage is lost.</p></fieldset>
-        {import.meta.env.VITE_OCR_EXPERIMENT === 'true' && evidence && <section className="ocr-experiment" aria-label="Experimental image reading"><h3>Image reading experiment</h3><p className="help">For the fictional printed test sheet only. Suggestions can be wrong. Check each against the original and accept one at a time. The image stays on this device during recognition.</p><button type="button" className="quiet" disabled={ocrBusy} onClick={() => void suggestFromImage()}>{ocrBusy ? 'Reading image…' : 'Suggest figures from image'}</button>{ocrError && <p className="attachment-error" role="alert">{ocrError}</p>}{!ocrBusy && ocrSuggestions.length > 0 && <ul className="ocr-suggestions">{ocrSuggestions.map(suggestion => <li key={suggestion.field}><span>{suggestion.field.replace('party:', 'Party ')}: {suggestion.value} · OCR confidence {suggestion.confidence}%</span><button type="button" className="quiet" onClick={() => acceptOcr(suggestion)}>Accept this figure</button><button type="button" className="text-button" onClick={() => setOcrSuggestions(previous => previous.filter(item => item.field !== suggestion.field))}>Dismiss</button></li>)}</ul>}</section>}        <fieldset className="capture-checklist"><legend>Evidence checks</legend><p className="help">{checklistCount} of 3 complete. Confirm these against the source before continuing. The device time is recorded when you save.</p><label><input type="checkbox" checked={form.copy_seen} onChange={e => edit('copy_seen', e.target.checked)} />I have seen the result copy I am recording.</label><label><input type="checkbox" checked={form.figures_compared} onChange={e => edit('figures_compared', e.target.checked)} />I compared every total and party score with that copy.</label><label><input type="checkbox" checked={form.location_checked} onChange={e => edit('location_checked', e.target.checked)} />I checked the generated unit code, state, LGA and ward.</label></fieldset>
+        {ocrDemoEnabled(session) && evidence && <ReporterOcr key={`${draftId}/${correction?.next ?? 1}/${evidence.digest}`} originalUrl={evidencePreview} loadOriginal={loadOriginalOcr} onAccept={acceptOcr} />}
+        <fieldset className="capture-checklist"><legend>Evidence checks</legend><p className="help">{checklistCount} of 3 complete. Confirm these against the source before continuing. The device time is recorded when you save.</p><label><input type="checkbox" checked={form.copy_seen} onChange={e => edit('copy_seen', e.target.checked)} />I have seen the result copy I am recording.</label><label><input type="checkbox" checked={form.figures_compared} onChange={e => edit('figures_compared', e.target.checked)} />I compared every total and party score with that copy.</label><label><input type="checkbox" checked={form.location_checked} onChange={e => edit('location_checked', e.target.checked)} />I checked the generated unit code, state, LGA and ward.</label></fieldset>
         <div className="form-actions"><button className="primary" disabled={busy}>Review figures</button>{correction && <button type="button" className="quiet" onClick={() => { if (evidence) void removeEvidence(session.alias, correction.id, correction.next); setCorrection(null); setForm(newForm()); setEvidence(null); setDraftId(crypto.randomUUID()); setDraftTouched(false); void clearDraft(session.alias) }}>Cancel correction</button>}</div>
       </form>}</section>}
     {screen === 'records' && <div className="records-layout"><section className="surface"><div className="surface-heading"><div><span className="eyebrow">Local queue</span><h2>On this device</h2></div><button className="quiet" disabled={busy || offlineOnly || !(queued || pendingImages)} onClick={() => void sync()}>Sync {queued} records · {pendingImages} images</button></div><p className="help">Saved here is different from received by the service. A verified receipt confirms delivery.</p>{offlineOnly && <p className="small-warning">Offline access only. Sign in online before syncing.</p>}{records.length ? <ul className="record-cards">{records.map(item => <li key={`${item.payload.report_id}-${item.payload.version}`}><div className="record-card-top"><strong>{item.payload.data.unit_id}</strong><span className={`status-label ${item.state}`}>{stateLabel(item.state)}</span></div><small>Version {item.payload.version} · {item.payload.data.state || 'State not set'} · {new Date(item.savedAt).toLocaleString()}</small>{item.receipt && <p className="receipt-line">Receipt {item.receipt.body.digest.slice(0, 16)}…</p>}{item.payload.evidence && <p className="help">Image: {item.evidenceState === 'verified' ? 'verified on service' : item.state === 'queued' ? 'encrypted on this device' : 'upload pending — retry sync'} · SHA-256 {item.payload.evidence.digest.slice(0, 16)}…</p>}<div className="record-actions">{item.state === 'queued' && <button className="text-button" onClick={() => editQueued(item)}>Edit queued report</button>}{item.state !== 'queued' && <button className="text-button" onClick={() => correct(item)}>Create correction</button>}{item.state === 'received' && !item.payload.evidence && !offlineOnly && <label className="photo-action"><PaperclipIcon /><span>{uploading === item.payload.report_id ? 'Uploading…' : 'Attach source image'}</span><input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Attach source image to received record" disabled={Boolean(uploading)} onChange={e => { void uploadPhoto(item, e.target.files?.[0]); e.target.value = '' }} /></label>}{item.evidenceState === 'verified' && <button className="text-button" onClick={() => void removeEvidence(session.alias, item.payload.report_id, item.payload.version).then(() => setMessage('Local image removed; hosted evidence remains.'))}>Remove local image</button>}<button className="text-button" onClick={() => void clearLocalRecord(item)}>Remove local copy</button></div>{uploadError?.reportId === item.payload.report_id && <p className="attachment-error" role="alert">{uploadError.text}</p>}</li>)}</ul> : <p className="empty-inline">No saved records on this device.</p>}<p className="privacy-note">Removing a received copy here does not delete the service record or its audit trail. Records are visible only to your assigned account and authorised reviewers. The reviewer map is not public.</p></section>
