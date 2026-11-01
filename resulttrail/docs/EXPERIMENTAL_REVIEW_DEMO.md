@@ -18,6 +18,12 @@ From `cloud/`, run `npm ci`, then `npm run dev -- --local --ip 127.0.0.1 --port 
 
 The flags are compiled into the client build. Both default to off, and an unset account allowlist permits no experimental UI. For a normal build, clear the three `VITE_*` variables and run `npm run build` again. Do not deploy the flagged build to the public Worker.
 
+## Isolated hosted preview
+
+The same branch also runs on a separate login-gated Worker and D1 database, configured by `cloud/wrangler.preview.jsonc`. It has its own signing key and accounts and no route to the production domain. The URL and account credential file locations are kept in the ignored local `instance/preview-access.md` handout. A URL alone does not grant report or reviewer access; the login page itself is reachable to anyone who knows the address. Do not share the credential files through Git or place passwords in screenshots. This preview is for invited testing only and has the same experimental and unvalidated labels as the local build.
+
+To update **only this preview**, build `client/` with both flags and `VITE_EXPERIMENT_ALIASES=preview_observer,preview_reviewer`, then run `npx wrangler deploy --config wrangler.preview.jsonc` from `cloud/`. Its configuration deliberately omits the production custom-domain routes and uses a separate D1 ID. The signing key is a Worker secret; its local recovery file stays ignored under `instance/`.
+
 ## Walkthrough
 
 1. **Reporter:** Attach a fictional result-sheet image (JPEG, PNG or WebP; current evidence cap 750 KB). The experimental OCR panel appears for an allowlisted account. Rotate, crop or adjust contrast, then select **Read processed copy**. These controls create a temporary local image; the attached original and its SHA-256 digest stay unchanged. Select each highlighted suggestion and use **Accept figure** only after checking the original. Dismiss or type any missing figures manually. Complete the evidence checklist, save the encrypted record, and sync.
@@ -38,3 +44,5 @@ The local OCR parser is intentionally narrow: it expects the fictional printed d
 - TypeScript build and lint checks run locally.
 
 The release limitations and evidence needed for broader use remain in [VALIDATION_PACKET.md](VALIDATION_PACKET.md) and [WHY_OCR_AND_RANKING_ARE_NOT_LIVE.md](WHY_OCR_AND_RANKING_ARE_NOT_LIVE.md). The 750 KB evidence cap is unchanged. Larger images can be used in isolated OCR development tests, then evaluated separately before changing the upload limit.
+
+The [acceptance status](ACCEPTANCE_STATUS_2026-11-01.md) records the browser and hosted-preview checks, the mobile CSS fixes, and the D1 storage reason a 2 MB upload cannot be enabled by changing a constant.
