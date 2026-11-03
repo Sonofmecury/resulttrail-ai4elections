@@ -1,7 +1,7 @@
 export type Suggestion = { field: string; value: number; confidence: number; box: { x: number; y: number; width: number; height: number } }
 type Word = { text: string; confidence: number; line: string; x: number; y: number; width: number; height: number }
 
-// A deliberately narrow parser for ResultTrail's fictional, printed demo sheet.
+// A deliberately narrow parser for clear, printed result copies with field labels.
 // Ambiguous lines, repeated fields and non-integer values yield no suggestion.
 export function parsePrintedResultTsv(tsv: string): Suggestion[] {
   const words: Word[] = []
@@ -19,7 +19,7 @@ export function parsePrintedResultTsv(tsv: string): Suggestion[] {
   for (const line of lines.values()) {
     const sorted = line.sort((a, b) => a.x - b.x)
     const text = sorted.map(word => word.text).join(' ').replace(/\s+/g, ' ').trim()
-    const match = /^(Accredited|Votes cast|Valid votes|Rejected|Party ([A-Z]))\s+([0-9]{1,5})$/i.exec(text)
+    const match = /^(Accredited|Votes cast|Valid votes|Rejected|Party ([A-Z][A-Z0-9-]{0,11}))\s+([0-9]{1,5})$/i.exec(text)
     if (!match) continue
     const field = match[2] ? `party:${match[2].toUpperCase()}` : ({ accredited: 'accredited', 'votes cast': 'cast', 'valid votes': 'valid', rejected: 'rejected' } as Record<string, string>)[match[1].toLowerCase()]
     const numeric = sorted.at(-1)!

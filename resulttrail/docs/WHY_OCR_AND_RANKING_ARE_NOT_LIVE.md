@@ -1,5 +1,7 @@
 # Why the remaining review-assistant features are not live
 
+> Historical status as of 30 October 2026. For the current fictional-demo OCR release and remaining validation gap, see [4 November release status](RELEASE_STATUS_2026-11-04.md). Automated ranking is still off.
+
 **ResultTrail status, 30 October 2026.** The public site still provides encrypted offline report capture, image attachment and verification, deterministic arithmetic checks, a reviewer evidence workbench, human field comparisons, and the geographic explorer. Optional OCR suggestions and automated review-queue ranking are **not enabled**. The code and experiments for them are in [draft PR #1](https://github.com/Sonofmecury/resulttrail-ai4elections/pull/1). This document explains what was built, what is still missing, and why a promising benchmark number did not justify deployment.
 
 ## The central difficulty

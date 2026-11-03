@@ -17,4 +17,4 @@ The separate [public-document benchmark](PUBLIC_OCR_BENCHMARK.md) can expose OCR
 2. Record only features available at initial receipt for the initial-queue comparison. Reviewer comparison events may update a later queue state but cannot be used to score initial priority. Missing image/history remains unknown.
 3. Have blinded reviewers inspect baseline and challenger queues. Measure recall and precision at the same budget, critical misses, category and area coverage, time and decision accuracy. Recheck important cases with adjudication. Enable only if recall rises by at least five percentage points with no extra critical misses or material subgroup regression.
 
-Until both sets are independently collected and assessed, OCR and model ranking remain disabled. The deterministic checks and human evidence comparison remain available.
+Until these sets are independently collected and assessed, OCR remains an unvalidated, optional aid in the fictional demonstration and model ranking remains disabled. Do not use either for operational election decisions. The deterministic checks and human evidence comparison remain available.

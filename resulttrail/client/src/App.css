@@ -244,6 +244,30 @@ footer{display:flex;justify-content:space-between;gap:20px;border-top:1px solid 
 .login-card .subtle{margin-top:18px;font-family:'IBM Plex Sans',Arial,sans-serif;font-size:12px;line-height:1.55}
 @media(max-width:600px){.login-card .login-lead{margin-bottom:26px}.login-card label{margin-bottom:18px}}
 .party-help{margin:5px 0 14px}.party-rows{display:grid;gap:10px}.party-entry{display:grid;grid-template-columns:minmax(120px,1fr) minmax(110px,1fr) auto;gap:12px;align-items:end;padding:13px;border:1px solid #e1ebe3;border-radius:12px;background:#fbfdfa}.party-entry label{margin:0}.party-entry .party-remove{min-height:44px;border-radius:9px}.party-add{margin-top:13px;border-radius:9px}
+
+/* Reviewer comparison uses the same type, spacing and soft corners as the workbench. */
+.field-comparison{font-family:'IBM Plex Sans',Arial,sans-serif}
+.field-comparison .comparison-heading{align-items:center;margin-bottom:15px}
+.field-comparison .comparison-heading h3{margin:0 0 5px;font-size:18px;font-weight:600;letter-spacing:-.03em;line-height:1.25;color:#173e2c}
+.field-comparison .comparison-heading p{font-size:12px;line-height:1.5;color:#607668}
+.comparison-count{flex:none;border-radius:99px;padding:7px 10px;background:#eaf5ed;color:#08734b;font-size:10px;font-weight:700;white-space:nowrap}
+.comparison-fields{gap:9px}
+.comparison-field{display:grid;grid-template-columns:minmax(155px,.55fr) minmax(0,1.45fr);align-items:start;gap:17px;padding:16px 17px;border:1px solid #dfe9df;border-radius:15px;background:#fff;box-shadow:0 3px 12px #153a2409}
+.comparison-figure{display:grid;gap:8px;min-width:0}
+.comparison-figure>div{display:grid;gap:3px}
+.comparison-figure strong{font-size:14px;font-weight:600;line-height:1.3;color:#163e2c}
+.comparison-figure .comparison-current{font-size:12px;font-weight:400;color:#617769}
+.comparison-current b{font-size:17px;font-weight:600;color:#006f4a}
+.comparison-figure small{justify-self:start;border-radius:99px;background:#f1f6f1;padding:5px 9px;font-size:10px;font-weight:500;color:#567260}
+.comparison-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) auto;align-items:end;gap:9px;min-width:0}
+.comparison-controls label{display:grid;gap:6px;margin:0;min-width:0;font-size:11px;font-weight:600;letter-spacing:0;color:#375946}
+.comparison-controls input,.comparison-controls select{width:100%;min-width:0;min-height:42px;margin:0;border:1px solid #cbd9ce;border-radius:9px;padding:9px 11px;background:#fff;font-family:inherit;font-size:12px;font-weight:400;color:#173d2b}
+.comparison-controls input::placeholder{color:#829788;font-weight:400}
+.comparison-controls>button{grid-column:auto;justify-self:auto;min-height:42px;white-space:nowrap}
+.comparison-history{margin-top:15px;border-top:1px solid #e2ece3;padding-top:13px}
+.comparison-history summary{font-size:12px;font-weight:600}
+@media(max-width:1000px){.comparison-field{grid-template-columns:1fr;gap:12px}.comparison-figure{display:flex;align-items:center;justify-content:space-between;gap:12px}.comparison-controls{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.comparison-controls>button{grid-column:2;justify-self:start}}
+@media(max-width:620px){.field-comparison .comparison-heading{align-items:start;flex-wrap:wrap}.comparison-field{padding:14px}.comparison-controls{grid-template-columns:1fr}.comparison-controls>button{grid-column:1;width:100%}.comparison-figure small{font-size:9px}}
 @media(max-width:600px){.party-entry{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px}.party-entry .party-remove{grid-column:1/-1;justify-self:start;min-height:36px}.party-entry input{width:100%}}
 
 /* Guided capture, reporter progress, and local privacy controls. */

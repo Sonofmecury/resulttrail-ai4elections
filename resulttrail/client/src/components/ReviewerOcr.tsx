@@ -71,8 +71,8 @@ export function ReviewerOcr({ item, session, onAudit, onProvisional }: Props) {
   }
 
   const selected = suggestions.find(value => value.field === selectedField)
-  return <section className="reviewer-ocr ocr-experiment" aria-label="Experimental reviewer OCR">
-    <span className="experimental-tag">Experimental · unvalidated OCR</span>
+  return <section className="reviewer-ocr ocr-experiment" aria-label="Reviewer OCR assistance">
+    <span className="experimental-tag">Optional OCR assistance</span>
     <h3>Image-to-entry comparison</h3>
     <p className="help">Run OCR on this verified image, then inspect the highlighted region yourself. Its text is a hint, not a finding. Human actions enter the existing audit history; submitted figures never change.</p>
     <button type="button" className="quiet" disabled={!source || busy} onClick={() => void readImage()}>{busy ? 'Reading source…' : 'Read source image on this device'}</button>

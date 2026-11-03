@@ -1,12 +1,12 @@
 import type { Session } from './types'
 
-// Build flags control the demo UI, while the existing server role/session controls
-// all evidence reads and reviewer writes. Normal builds leave both flags unset.
+// Review ranking remains account-limited. OCR is an explicit, on-device action
+// available to signed-in reporters and reviewers; server roles still enforce access.
 const aliases = (import.meta.env.VITE_EXPERIMENT_ALIASES || '')
   .split(',').map((alias: string) => alias.trim().toLowerCase()).filter(Boolean)
 
-export function ocrDemoEnabled(session: Session): boolean {
-  return import.meta.env.VITE_OCR_EXPERIMENT === 'true' && aliases.includes(session.alias.toLowerCase())
+export function ocrAvailable(session: Session): boolean {
+  return session.role === 'reporter' || session.role === 'reviewer'
 }
 
 export function rankingDemoEnabled(session: Session): boolean {

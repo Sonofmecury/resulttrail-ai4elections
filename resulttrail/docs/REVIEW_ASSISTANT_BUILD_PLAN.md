@@ -1,6 +1,6 @@
 # ResultTrail review assistant: delivery plan
 
-Status: releases 1 and 2 (offline encrypted image capture, signed declaration and human field comparison) deployed 29 October 2026. Release 3 has a flagged local OCR prototype, rendered-sheet benchmark and supplementary public-document benchmark; Release 4 has a fictional ranking benchmark. Neither passed its release gate or is live. Historical source audit is recorded in `HISTORICAL_CONTEXT_AUDIT.md`. See `PUBLIC_OCR_BENCHMARK.md` for the SROIE size experiment and FUNSD adapter.
+Status: releases 1 and 2 (offline encrypted image capture, signed declaration and human field comparison) deployed 29 October 2026. On 4 November, optional OCR assistance was made available in the fictional demonstration at the user's request; its independent photo and usability gates remain unmet, so it is not validated for operational use. Release 4 review ranking remains disabled. See [current release status](RELEASE_STATUS_2026-11-04.md). Historical source audit is recorded in `HISTORICAL_CONTEXT_AUDIT.md`. See `PUBLIC_OCR_BENCHMARK.md` for the SROIE size experiment and FUNSD adapter.
 
 ## Product rule
 

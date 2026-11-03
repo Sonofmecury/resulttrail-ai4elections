@@ -37,10 +37,10 @@ export function ReporterOcr({ originalUrl, loadOriginal, onAccept }: Props) {
     setMessage(`${suggestion.field.replace('party:', 'Party ')} entered for your review. Check all figures before saving.`)
   }
   const focused = suggestions.find(value => value.field === selected)
-  return <section className="ocr-experiment reporter-ocr" aria-label="Experimental reporter OCR">
-    <span className="experimental-tag">Experimental · unvalidated OCR</span>
+  return <section className="ocr-experiment reporter-ocr" aria-label="Reporter OCR assistance">
+    <span className="experimental-tag">Optional OCR assistance</span>
     <h3>Suggest figures from the image</h3>
-    <p className="help">This works best with the fictional printed demo sheet. Crop, rotate or increase contrast if needed. Processing uses a temporary copy on this device; the original encrypted evidence remains unchanged. Suggestions require your acceptance.</p>
+    <p className="help">Works best with clear printed sheets in the supported layout. Crop, rotate or increase contrast if needed. Processing uses a temporary copy on this device; the original evidence remains unchanged. Check every figure against the image before accepting it.</p>
     {originalUrl && <div className="ocr-crop-preview"><img src={originalUrl} alt="Original source to crop for OCR" /><span aria-hidden="true" style={{ left: `${Math.max(0, Math.min(95, crop.x))}%`, top: `${Math.max(0, Math.min(95, crop.y))}%`, width: `${Math.max(5, Math.min(100 - crop.x, crop.width))}%`, height: `${Math.max(5, Math.min(100 - crop.y, crop.height))}%` }} /></div>}
     <div className="ocr-control-grid">
       <label>Rotate<select value={transform.rotation} onChange={event => { setTransform(previous => ({ ...previous, rotation: Number(event.target.value) as OcrTransform['rotation'] })); setSuggestions([]) }}><option value={0}>0°</option><option value={90}>90°</option><option value={180}>180°</option><option value={270}>270°</option></select></label>

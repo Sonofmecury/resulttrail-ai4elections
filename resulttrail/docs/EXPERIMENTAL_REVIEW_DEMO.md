@@ -1,5 +1,7 @@
 # Experimental OCR and review-priority demo
 
+> This records the earlier flagged preview setup. For the current optional OCR interface and its limitations, see [4 November release status](RELEASE_STATUS_2026-11-04.md). The ranking flag below remains restricted.
+
 This branch completes an interactive, controlled demonstration of the review assistant. The public ResultTrail site is unchanged. OCR and queue priority are **experimental and unvalidated**; they never edit a received result, approve a version, or determine fraud. The existing independent photo, usability and ranking release gates still apply before general release.
 
 ## Run on this development machine

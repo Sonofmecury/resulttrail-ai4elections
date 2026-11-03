@@ -4,13 +4,13 @@ import { GeoExplorer } from './GeoExplorer'
 import { EvidenceImage } from './EvidenceImage'
 import { FieldComparison } from './FieldComparison'
 import { ReviewerOcr } from './ReviewerOcr'
-import { ocrDemoEnabled, rankingDemoEnabled } from '../experiments'
+import { ocrAvailable, rankingDemoEnabled } from '../experiments'
 import { rankReviewQueue, type Priority } from '../reviewPriority'
+import type { SignedExport } from '../signedExportPdf'
 import type { ReviewItem, Session, Submission } from '../types'
 
-type ExportPackage = { body: { export_id: string }; digest: string; signature: string; key_id: string }
-function download(name: string, value: unknown) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' }))
+function download(name: string, bytes: Uint8Array<ArrayBuffer>) {
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }))
   const link = document.createElement('a'); link.href = url; link.download = name; link.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
@@ -36,7 +36,7 @@ export function ReviewerView({ session }: { session: Session }) {
   const [receiptStatus, setReceiptStatus] = useState<{ id: string; message: string } | null>(null)
   const [provisional, setProvisional] = useState<Record<string, number>>({})
   const [auditRefresh, setAuditRefresh] = useState(0)
-  const ocrEnabled = ocrDemoEnabled(session), rankingEnabled = rankingDemoEnabled(session)
+  const ocrEnabled = ocrAvailable(session), rankingEnabled = rankingDemoEnabled(session)
   async function load() {
     const response = await getReviewQueue()
     setItems(response.items)
@@ -71,11 +71,12 @@ export function ReviewerView({ session }: { session: Session }) {
     if (!item) return
     setBusy(true); setMessage('')
     try {
-      const result = await request<ExportPackage>('/exports', 'POST', { report_id: item.report_id }, session.csrf)
-      download(`resulttrail-${result.body.export_id}.json`, result)
-      const publicKey = await request(`/public-key/${result.key_id}`)
-      download(`resulttrail-${result.key_id}.json`, publicKey)
-      setMessage('Minimized signed package and verification key downloaded.')
+      const result = await request<SignedExport>('/exports', 'POST', { report_id: item.report_id }, session.csrf)
+      const publicKey = await request<{ public_key: string }>(`/public-key/${result.key_id}`)
+      const { createSignedExportPdf } = await import('../signedExportPdf')
+      const pdf = await createSignedExportPdf(result, publicKey)
+      download(`resulttrail-${result.body.export_id}.pdf`, new Uint8Array(pdf))
+      setMessage('PDF downloaded. Its signed package and verification key are embedded as attachments.')
     } catch (e) { setMessage((e as Error).message) } finally { setBusy(false) }
   }
   async function checkReceipt() {
@@ -123,7 +124,7 @@ export function ReviewerView({ session }: { session: Session }) {
         {versions.length > 1 && <><div className="surface-heading version-head"><div><h3>Compare versions</h3><p>Previous versions stay available after correction. Changes are not automatically suspicious.</p></div><select aria-label="Compare with version" value={compareVersion ?? item.version - 1} onChange={e => setCompareVersion(Number(e.target.value))}>{versions.filter(entry => entry.version < item.version).map(entry => <option key={entry.version} value={entry.version}>Version {entry.version}</option>)}</select></div>{older && <div className="comparison"><div><span>Earlier · v{older.version}</span><strong>Cast {older.payload.data.cast} · valid {older.payload.data.valid} · rejected {older.payload.data.rejected}</strong><small>{older.payload.data.source_note || 'No note'}</small></div><div><span>Current · v{item.version}</span><strong>Cast {item.payload.data.cast} · valid {item.payload.data.valid} · rejected {item.payload.data.rejected}</strong><small>{item.payload.data.source_note || 'No note'}</small></div></div>}{older && <p className="help">{versionChanges.length ? `Changed fields: ${versionChanges.join(' · ')}` : 'No numeric fields changed between these versions.'}</p>}</>}
         <h3>Evidence trail</h3><ol className="evidence-timeline"><li><strong>Version received</strong><span>{new Date(item.received_at).toLocaleString()} · signed receipt {item.receipt.body.digest.slice(0, 16)}…</span></li>{item.evidence_digest && <li><strong>Source image attached</strong><span>Original hash stored and signed for this version.</span></li>}{item.review && <li><strong>{item.review.decision.replace('_', ' ')}</strong><span>{new Date(item.review.created_at).toLocaleString()} · {item.review.note}</span></li>}</ol>
         <div className="receipt-check"><button className="quiet" onClick={() => void checkReceipt()}>Verify signed receipt</button>{receiptStatus?.id === `${item.report_id}/${item.version}` && <span role="status">{receiptStatus.message}</span>}</div>
-        <div className="decision-panel">{item.review?.decision === 'approved' || item.review?.decision === 'needs_correction' ? <p className="decision-recorded">Decision recorded: <strong>{item.review.decision.replace('_', ' ')}</strong>. A new submission version is needed for another review.</p> : <><label>Review note<textarea value={note} onChange={e => setNote(e.target.value)} maxLength={500} rows={2} /></label><div className="form-actions"><button className="primary" disabled={busy || note.trim().length < 2} onClick={() => void decide('approved')}>Approve version</button><button className="quiet" disabled={busy || note.trim().length < 2} onClick={() => void decide('needs_correction')}>Request correction</button><button className="quiet" disabled={busy || note.trim().length < 2} onClick={() => void decide('reviewed')}>Mark reviewed</button></div></>}{item.review?.decision === 'approved' && <button className="export-button" disabled={busy} onClick={() => void exportApproved()}>Download signed, minimized export</button>}</div>
+        <div className="decision-panel">{item.review?.decision === 'approved' || item.review?.decision === 'needs_correction' ? <p className="decision-recorded">Decision recorded: <strong>{item.review.decision.replace('_', ' ')}</strong>. A new submission version is needed for another review.</p> : <><label>Review note<textarea value={note} onChange={e => setNote(e.target.value)} maxLength={500} rows={2} /></label><div className="form-actions"><button className="primary" disabled={busy || note.trim().length < 2} onClick={() => void decide('approved')}>Approve version</button><button className="quiet" disabled={busy || note.trim().length < 2} onClick={() => void decide('needs_correction')}>Request correction</button><button className="quiet" disabled={busy || note.trim().length < 2} onClick={() => void decide('reviewed')}>Mark reviewed</button></div></>}{item.review?.decision === 'approved' && <button className="export-button" disabled={busy} onClick={() => void exportApproved()}>Download approved PDF</button>}</div>
       </> : <p className="empty-inline">Select a report to inspect its figures, checks and evidence.</p>}</section>
     </div>}
   </div>
