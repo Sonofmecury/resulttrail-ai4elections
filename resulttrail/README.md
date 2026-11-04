@@ -2,9 +2,9 @@
 
 **Hosted site:** [resulttrail.ng](https://resulttrail.ng). The [Workers address](https://aegisrelay-app.mukhtarabdulrazaq-18.workers.dev) remains available. The site runs independently of this laptop and stores shared records in Cloudflare D1. See the [hosted deployment guide](cloud/README.md) for accounts, deployment and backups. The Python/SQLite path below is a local development demo.
 
-A free and open-source prototype for recording a **fictional** polling-unit result copy. A reporter can save encrypted drafts, records and a source image on a device during an outage, sign in and sync later, and verify a server-signed receipt. A reviewer can inspect arithmetic checks, the source image, field-by-field comparison notes, corrections and a geographic coverage map before making a human decision. Only a reviewer-approved version can produce a minimized signed JSON package. This is independent observer workflow research, **not an official election system**.
+A free and open-source prototype for recording a **fictional** polling-unit result copy. A reporter can save encrypted drafts, records and a source image on a device during an outage, sign in and sync later, and verify a server-signed receipt. A reviewer can inspect arithmetic checks, the source image, field-by-field comparison notes, corrections and a geographic coverage map before making a human decision. Optional on-device OCR assists both roles. Only a reviewer-approved version can produce a readable PDF with the signed minimized JSON package embedded. This is independent observer workflow research, **not an official election system**.
 
-The illustrated [user guide](docs/USER_GUIDE.pdf) introduces the project and walks through the reporter and reviewer pathways, including the state, LGA and ward map views. It will be updated as the prototype changes.
+The illustrated [user guide](docs/USER_GUIDE.pdf) introduces the project and walks through both pathways, the state/LGA/ward map, OCR assistance, human comparison and PDF export. The [project deep dive](docs/PROJECT_DEEP_DIVE.pptx) explains architecture, database, code decisions, design and validation status. Both are updated as the prototype changes.
 
 ## Run locally (Windows PowerShell)
 
@@ -32,7 +32,7 @@ Reporter party rows can be added or removed (2–26 rows). Codes such as `APC`, 
 
 New reports include a three-step evidence checklist. Its confirmations and device-recorded save time are included in the signed report payload; the time is not an independent timestamp. Reporters can see a received/reviewed progress timeline and reviewer feedback across devices, and can remove individual encrypted local copies. The [privacy and retention note](docs/privacy-and-retention.md) explains the distinction between local removal and hosted records, reviewer-only geographic access, and current deletion limits.
 
-The [review assistant build plan](docs/REVIEW_ASSISTANT_BUILD_PLAN.md) sets the delivery order and acceptance gates for OCR, ranking and historical research. The earlier [image and AI delivery plan](docs/AI_AND_IMAGE_PLAN.md) provides further storage detail. Offline encrypted image capture, signed image declarations, retryable upload and human field comparison are live. OCR and model ranking are not active.
+The [review assistant build plan](docs/REVIEW_ASSISTANT_BUILD_PLAN.md) sets the delivery order and acceptance gates for OCR, ranking and historical research. The earlier [image and AI delivery plan](docs/AI_AND_IMAGE_PLAN.md) provides further storage detail. Offline encrypted image capture, signed image declarations, retryable upload and human field comparison are live. Optional OCR is available as unvalidated assistance; automated review ranking remains off.
 
 The hosted reviewer account now has a Geographic Explorer with State → LGA → Ward drill-down, a hash-verified source-image preview and a signed-receipt verification control. The hosted demonstration includes 15 geographically dispersed illustrative records, including approved, pending and correction-requested states. The separate hackathon login handout is kept in the ignored `instance/hackathon-access.md` file.
 
