@@ -4,7 +4,7 @@ type Result = { election_id: string; unit_id: string; accredited: number; cast: 
 type EvidenceDeclaration = { digest: string; mime: 'image/jpeg' | 'image/png' | 'image/webp'; size: number }
 type Submission = { report_id: string; version: number; data: Result; evidence?: EvidenceDeclaration }
 type VersionRow = { tenant: string; report_id: string; version: number; payload_json: string; digest: string; reporter: string; received_at: string; receipt_json: string }
-type ReviewRow = VersionRow & { review_decision: string | null; review_note: string | null; review_created_at: string | null; evidence_digest: string | null; duplicate_image_reports: number }
+type ReviewRow = VersionRow & { review_decision: string | null; review_note: string | null; review_created_at: string | null; evidence_digest: string | null; duplicate_image_reports: number; comparison_count: number; comparison_mismatches: number }
 const KEY_ID = 'cloud-v1'
 const encoder = new TextEncoder()
 
@@ -223,7 +223,11 @@ async function api(request: Request, env: Env): Promise<Response> {
   if (path === '/api/review' && method === 'GET') {
     const user = await actor(request, env); role(user, 'reviewer')
     const rows = await env.DB.prepare(`SELECT r.*, a.decision AS review_decision,a.note AS review_note,a.created_at AS review_created_at,e.digest AS evidence_digest,
-      (SELECT COUNT(DISTINCT z.report_id) FROM evidence_photo z WHERE z.tenant=r.tenant AND z.digest=e.digest AND z.report_id<>r.report_id) AS duplicate_image_reports
+      (SELECT COUNT(DISTINCT z.report_id) FROM evidence_photo z WHERE z.tenant=r.tenant AND z.digest=e.digest AND z.report_id<>r.report_id) AS duplicate_image_reports,
+      (SELECT COUNT(*) FROM field_review_action f WHERE f.tenant=r.tenant AND f.report_id=r.report_id AND f.version=r.version AND f.outcome<>'not_compared'
+        AND f.id=(SELECT MAX(g.id) FROM field_review_action g WHERE g.tenant=f.tenant AND g.report_id=f.report_id AND g.version=f.version AND g.field_key=f.field_key)) AS comparison_count,
+      (SELECT COUNT(*) FROM field_review_action f WHERE f.tenant=r.tenant AND f.report_id=r.report_id AND f.version=r.version AND f.outcome='possible_mismatch'
+        AND f.id=(SELECT MAX(g.id) FROM field_review_action g WHERE g.tenant=f.tenant AND g.report_id=f.report_id AND g.version=f.version AND g.field_key=f.field_key)) AS comparison_mismatches
       FROM result_version r LEFT JOIN review_action a ON a.id=(SELECT MAX(z.id) FROM review_action z WHERE z.tenant=r.tenant AND z.report_id=r.report_id AND z.version=r.version)
       LEFT JOIN evidence_photo e ON e.tenant=r.tenant AND e.report_id=r.report_id AND e.version=r.version
       WHERE r.tenant=? AND r.version=(SELECT MAX(x.version) FROM result_version x WHERE x.tenant=r.tenant AND x.report_id=r.report_id)
@@ -232,7 +236,7 @@ async function api(request: Request, env: Env): Promise<Response> {
     for (const row of rows.results) {
       const review = row.review_decision ? { decision: row.review_decision, note: row.review_note, created_at: row.review_created_at } : null
       const payload = JSON.parse(row.payload_json) as Submission
-      items.push({ report_id: row.report_id, version: row.version, payload, receipt: JSON.parse(row.receipt_json), flags: checks(payload.data), review, received_at: row.received_at, evidence_digest: row.evidence_digest, duplicate_image_reports: row.duplicate_image_reports })
+      items.push({ report_id: row.report_id, version: row.version, payload, receipt: JSON.parse(row.receipt_json), flags: checks(payload.data), review, received_at: row.received_at, evidence_digest: row.evidence_digest, duplicate_image_reports: row.duplicate_image_reports, comparison_count: row.comparison_count, comparison_mismatches: row.comparison_mismatches })
     }
     return json({ items })
   }
