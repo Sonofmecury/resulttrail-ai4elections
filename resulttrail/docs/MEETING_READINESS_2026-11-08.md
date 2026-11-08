@@ -16,6 +16,12 @@ The Rise Networks invitation and [programme website](https://ai4elections.risene
 - At a 390-pixel browser viewport, the reporter form and reviewer evidence screen had no horizontal document overflow. This is a browser viewport check, not a physical-phone usability study.
 - The tracked guide is 19 PDF pages; the tracked deep-dive deck contains 32 slides. Both describe the current OCR and PDF workflow. Draft [PR #1](https://github.com/Sonofmecury/resulttrail-ai4elections/pull/1) contains the current code and these artifacts; it remains unmerged into `main`.
 
+## Additional geographic demonstration check, later on 8 November
+
+The hosted workspace now has [36 additional fictional reports](GEOGRAPHIC_DEMO_DATA.md) across six states, 18 LGAs and 36 wards, each with a generated PDF sheet rendered to a PNG evidence image. This is in addition to the earlier illustrative sample; the 28/16 dashboard figures above are a historical snapshot from before this seed. The live map displayed Lagos with 14 reports, including Ikeja with 10, Alimosho with two and Eti Osa with two. Ikeja's ward map showed the new Aguda and Akiode examples.
+
+The approved Aguda example downloaded as a two-page PDF with an embedded signed package that passed independent verification. The pending Akiode example has a deliberate transcription difference: entered LP 35 and NNPP 19, while its source image shows LP 36 and NNPP 18. The live reviewer OCR identified both differences as inspection prompts. These clean, computer-rendered sheets are useful for explaining the workflow but still do not validate OCR accuracy on phone photographs.
+
 ## If asked to show the product
 
 1. Give the problem in one sentence: a field report needs an unambiguous path from encrypted local capture to server receipt and human review, including when connectivity is weak.
