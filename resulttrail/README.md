@@ -6,6 +6,8 @@ A free and open-source prototype for recording a **fictional** polling-unit resu
 
 The illustrated [user guide](docs/USER_GUIDE.pdf) introduces the project and walks through both pathways, the state/LGA/ward map, OCR assistance, human comparison and PDF export. The [project deep dive](docs/PROJECT_DEEP_DIVE.pptx) explains architecture, database, code decisions, design and validation status. Both are updated as the prototype changes.
 
+The [8 November meeting readiness check](docs/MEETING_READINESS_2026-11-08.md) records the latest live smoke test, demonstration route and remaining evidence gaps.
+
 ## Run locally (Windows PowerShell)
 
 From this `app` directory:
