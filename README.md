@@ -1,12 +1,20 @@
-# #AI4Elections Hackathon: Public Repository
+# ResultTrail
 
-## ResultTrail participant project
+**An independent evidence-capture and human-review prototype developed in response to the AI4Elections Track 5 brief.** It uses only fictional demonstration records; it is not an official election service and has no endorsement from the organisers or INEC.
 
-This fork contains [ResultTrail](resulttrail/README.md), an independent, fictional-only working prototype for **Track 5: Election Observation and Citizen Accountability**, chiefly problem **5C (evidence hygiene)** with a reporter feedback loop for **5E**. The hosted demonstration is [resulttrail.ng](https://resulttrail.ng). It is not an official election service or an endorsement by the organisers or INEC.
+![ResultTrail sign-in and project welcome screen](resulttrail/docs/screenshots/01-sign-in.png)
 
-Run and review the project from `resulttrail/`. Its [problem statement](resulttrail/docs/PROBLEM_STATEMENT.md), [methodology and evaluation](resulttrail/docs/METHODOLOGY_AND_EVALUATION.md), [system card](resulttrail/docs/MODEL_CARD.md), [safety statement](resulttrail/docs/SAFETY_AND_LIMITATIONS.md), [data sheet](resulttrail/docs/DATASHEET.md) and [privacy note](resulttrail/docs/privacy-and-retention.md) explain the prototype and its limits. The experimental anomaly model did not meet its predeclared gate and is disabled. A demo video will be added before submission.
+**[Live demonstration](https://resulttrail.ng/)** · **[Project source and setup](resulttrail/README.md)** · **[Screenshot walkthrough](resulttrail/docs/SCREENSHOT_WALKTHROUGH.md)** · **[User guide](resulttrail/docs/USER_GUIDE.pdf)** · **[Project slides](resulttrail/docs/PROJECT_DEEP_DIVE.pptx)**
 
-The [image and AI delivery plan](resulttrail/docs/AI_AND_IMAGE_PLAN.md) sets out the next build milestones and evaluation gates; those features are not yet live.
+A reporter can record a fictional result copy, keep an encrypted draft and image on the device during a network outage, sync later and verify the server receipt. A reviewer can inspect the original image, compare figures, navigate state/LGA/ward coverage, record an auditable human decision and export an approved version as a readable PDF with an embedded signed JSON package. Optional on-device OCR offers suggestions; automated review ranking remains disabled. The [system card](resulttrail/docs/system-card.md) explains exactly what these checks can and cannot prove.
+
+![Illustrative submission coverage on the ResultTrail reviewer map](resulttrail/docs/screenshots/06-nigeria-map.png)
+
+The [documentation index](resulttrail/docs/README.md) links the problem statement, architecture, evaluation, data provenance, safety, privacy and deployment guide. The [screenshot walkthrough](resulttrail/docs/SCREENSHOT_WALKTHROUGH.md) shows both pathways, three map levels, a deliberate image-entry difference for OCR review and the approved PDF. These examples demonstrate software behaviour; they do not establish accuracy with real election materials or operational readiness.
+
+---
+
+## AI4Elections starter resources retained from the upstream repository
 
 **Artificial Intelligence for Electoral Innovation, Integrity and Inclusion**
 
