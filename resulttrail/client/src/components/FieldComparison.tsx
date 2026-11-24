@@ -6,7 +6,7 @@ type Outcome = 'not_compared' | 'matches' | 'possible_mismatch' | 'cannot_read'
 type Action = { id: number; field_key: string; outcome: Outcome; note: string; reviewer: string; created_at: string; previous_event_id: number | null }
 const labels: Record<Outcome, string> = { not_compared: 'Not compared', matches: 'Matches image', possible_mismatch: 'Possible mismatch', cannot_read: 'Cannot read' }
 
-export function FieldComparison({ item, session }: { item: ReviewItem; session: Session }) {
+export function FieldComparison({ item, session, refreshKey = 0 }: { item: ReviewItem; session: Session; refreshKey?: number }) {
   const [actions, setActions] = useState<Action[]>([])
   const [choices, setChoices] = useState<Record<string, Outcome>>({})
   const [notes, setNotes] = useState<Record<string, string>>({})
@@ -22,7 +22,6 @@ export function FieldComparison({ item, session }: { item: ReviewItem; session: 
   const key = `${item.report_id}/${item.version}`
   useEffect(() => {
     let active = true
-    setActions([]); setChoices({}); setNotes({}); setMessage('')
     void request<{ actions: Action[] }>(`/review/${item.report_id}/fields?version=${item.version}`)
       .then(value => {
         if (!active) return
@@ -32,7 +31,7 @@ export function FieldComparison({ item, session }: { item: ReviewItem; session: 
         setNotes(Object.fromEntries([...latest].map(([field, action]) => [field, action.note])))
       }).catch(error => { if (active) setMessage((error as Error).message) })
     return () => { active = false }
-  }, [key, item.report_id, item.version])
+  }, [key, item.report_id, item.version, refreshKey])
   const latest = new Map(actions.map(action => [action.field_key, action]))
   const locked = item.review?.decision === 'approved' || item.review?.decision === 'needs_correction'
   async function save(field: string) {
@@ -46,13 +45,13 @@ export function FieldComparison({ item, session }: { item: ReviewItem; session: 
     } catch (error) { setMessage((error as Error).message) } finally { setBusyField(null) }
   }
   return <section className="field-comparison" aria-label="Field-by-field image comparison">
-    <div className="surface-heading"><div><h3>Compare image and entries</h3><p>Inspect the image for each figure. These are human review notes, not OCR findings.</p></div><span className="eyebrow">{latest.size} of {fields.length} fields logged</span></div>
+    <div className="surface-heading comparison-heading"><div><h3>Compare image and entries</h3><p>Check each figure against the source image and record what you see.</p></div><span className="comparison-count">{latest.size} of {fields.length} checked</span></div>
     {message && <p role="status" className="help">{message}</p>}
     <div className="comparison-fields">{fields.map(([field, label, value]) => <div className="comparison-field" key={field}>
-      <div><strong>{label}</strong><span>Entered: {value}</span><small>Latest: {labels[latest.get(field)?.outcome ?? 'not_compared']}</small></div>
-      <label>Comparison<select aria-label={`${label} comparison`} value={choices[field] ?? 'not_compared'} disabled={locked || !item.evidence_digest} onChange={event => setChoices(previous => ({ ...previous, [field]: event.target.value as Outcome }))}>{Object.entries(labels).map(([value, text]) => <option value={value} key={value}>{text}</option>)}</select></label>
-      <label>Reviewer note<input aria-label={`${label} comparison note`} maxLength={300} value={notes[field] ?? ''} disabled={locked || !item.evidence_digest} onChange={event => setNotes(previous => ({ ...previous, [field]: event.target.value }))} placeholder="What did you see on the image?" /></label>
-      <button className="quiet" type="button" disabled={locked || !item.evidence_digest || busyField !== null} onClick={() => void save(field)}>{busyField === field ? 'Saving…' : 'Save comparison'}</button>
+      <div className="comparison-figure"><div><strong>{label}</strong><span className="comparison-current">Entered <b>{value.toLocaleString('en-NG')}</b></span></div><small>{labels[latest.get(field)?.outcome ?? 'not_compared']}</small></div>
+      <div className="comparison-controls"><label>What does the image show?<select aria-label={`${label} comparison`} value={choices[field] ?? 'not_compared'} disabled={locked || !item.evidence_digest} onChange={event => setChoices(previous => ({ ...previous, [field]: event.target.value as Outcome }))}>{Object.entries(labels).map(([value, text]) => <option value={value} key={value}>{text}</option>)}</select></label>
+      <label>Reviewer note<input aria-label={`${label} comparison note`} maxLength={300} value={notes[field] ?? ''} disabled={locked || !item.evidence_digest} onChange={event => setNotes(previous => ({ ...previous, [field]: event.target.value }))} placeholder="Add a brief observation" /></label>
+      <button className="quiet" type="button" disabled={locked || !item.evidence_digest || busyField !== null} onClick={() => void save(field)}>{busyField === field ? 'Saving…' : 'Save note'}</button></div>
     </div>)}</div>
     {!item.evidence_digest && <p className="help">No uploaded image is available for this version. Field comparison is paused.</p>}
     {actions.length > 0 && <details className="comparison-history"><summary>Comparison history ({actions.length})</summary><ol>{actions.map(action => <li key={action.id}><strong>{action.field_key.replace('party:', 'Party ')}: {labels[action.outcome]}</strong> · {action.note || 'No note'} · {action.reviewer} · {new Date(action.created_at).toLocaleString()} <small>Event {action.id}{action.previous_event_id ? ` follows ${action.previous_event_id}` : ''}</small></li>)}</ol></details>}

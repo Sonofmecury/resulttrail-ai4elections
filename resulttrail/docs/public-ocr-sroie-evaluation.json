@@ -1,0 +1,65 @@
+{
+  "dataset": "SROIE",
+  "split": "test",
+  "source": "https://huggingface.co/datasets/jsdnrs/ICDAR2019-SROIE",
+  "source_revision": "bffe40c26759f3376ec2b3ae9031dbba54cd587c",
+  "source_terms": "Derivative identifies CC-BY-4.0; attribute Huang et al. and jsdnrs; do not commit images.",
+  "images": 100,
+  "unique_original_images": 98,
+  "unique_image_versions_processed": 99,
+  "conditions": {
+    "original": {
+      "images": 100,
+      "numeric_regions": 1454,
+      "proposed": 554,
+      "correct": 535,
+      "wrong": 19,
+      "abstained": 900,
+      "precision_in_annotated_numeric_regions": 0.9657039711191335,
+      "exact_region_coverage": 0.36795048143053644,
+      "changed_images": 0,
+      "mean_bytes": 143621,
+      "p95_ocr_ms": 3885
+    },
+    "750kb": {
+      "images": 100,
+      "numeric_regions": 1454,
+      "proposed": 554,
+      "correct": 535,
+      "wrong": 19,
+      "abstained": 900,
+      "precision_in_annotated_numeric_regions": 0.9657039711191335,
+      "exact_region_coverage": 0.36795048143053644,
+      "changed_images": 1,
+      "mean_bytes": 139793,
+      "p95_ocr_ms": 3885
+    },
+    "1_5mb": {
+      "images": 100,
+      "numeric_regions": 1454,
+      "proposed": 554,
+      "correct": 535,
+      "wrong": 19,
+      "abstained": 900,
+      "precision_in_annotated_numeric_regions": 0.9657039711191335,
+      "exact_region_coverage": 0.36795048143053644,
+      "changed_images": 0,
+      "mean_bytes": 143621,
+      "p95_ocr_ms": 3885
+    },
+    "2mb": {
+      "images": 100,
+      "numeric_regions": 1454,
+      "proposed": 554,
+      "correct": 535,
+      "wrong": 19,
+      "abstained": 900,
+      "precision_in_annotated_numeric_regions": 0.9657039711191335,
+      "exact_region_coverage": 0.36795048143053644,
+      "changed_images": 0,
+      "mean_bytes": 143621,
+      "p95_ocr_ms": 3885
+    }
+  },
+  "limits": "Numeric-only text boxes on forms/receipts. Spatial matching tests OCR recognition, not ResultTrail field mapping, handwriting, reporter acceptance, or election-result accuracy. Size tiers have no effect when originals already fit."
+}

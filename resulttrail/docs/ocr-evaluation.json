@@ -1,0 +1,71 @@
+{
+  "version": "ocr-printed-v1",
+  "corpus_seed": 20261030,
+  "sheets": 80,
+  "fields_available": 560,
+  "high_confidence_suggestions": 480,
+  "correct": 480,
+  "precision": 1,
+  "precision_wilson_lower_95": 0.9920602114410997,
+  "field_exact_match": 0.8571428571428571,
+  "abstention": 0.1428571428571429,
+  "p95_latency_ms": 371,
+  "peak_process_rss_bytes": 110350336,
+  "by_condition": {
+    "blur": {
+      "sheets": 16,
+      "suggested": 96,
+      "correct": 96,
+      "errors": 0
+    },
+    "clean": {
+      "sheets": 16,
+      "suggested": 97,
+      "correct": 97,
+      "errors": 0
+    },
+    "glare": {
+      "sheets": 16,
+      "suggested": 101,
+      "correct": 101,
+      "errors": 0
+    },
+    "low_light": {
+      "sheets": 16,
+      "suggested": 91,
+      "correct": 91,
+      "errors": 0
+    },
+    "rotated": {
+      "sheets": 16,
+      "suggested": 95,
+      "correct": 95,
+      "errors": 0
+    }
+  },
+  "by_layout": {
+    "1": {
+      "sheets": 40,
+      "suggested": 233,
+      "correct": 233
+    },
+    "2": {
+      "sheets": 40,
+      "suggested": 247,
+      "correct": 247
+    }
+  },
+  "synthetic_mismatch_probe": {
+    "true_positives": 19,
+    "false_positives": 0,
+    "false_negatives": 1,
+    "precision": 1,
+    "recall": 0.95
+  },
+  "wrong_suggestions": [],
+  "independent_photographed_holdout": false,
+  "consented_usability_test": false,
+  "gate_passed": false,
+  "product_ocr_enabled": false,
+  "limits": "Computer-rendered fictional sheets only. No photographed holdout, low-end phone measurements, or consented comparison with manual entry."
+}

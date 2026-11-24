@@ -1,0 +1,287 @@
+{
+  "seed": 20261030,
+  "train_rows": 540,
+  "holdout_rows": 900,
+  "budget": 180,
+  "by_kind": {
+    "contextual": 120,
+    "transcription": 105,
+    "arithmetic": 90,
+    "clean": 390,
+    "normal_extreme": 90,
+    "material_change": 45,
+    "duplicate_conflict": 60
+  },
+  "corpus_sha256": "567ea3a421235486ec713aaa3a26221d88c2e04bc31587306d22e182b2587d9b",
+  "results": {
+    "arithmetic_only": {
+      "precision_at_budget": 0.6667,
+      "recall_at_budget": 0.2857,
+      "false_positives": 60,
+      "critical_misses": 154,
+      "categories": {
+        "clean": {
+          "total": 390,
+          "selected": 52
+        },
+        "normal_extreme": {
+          "total": 90,
+          "selected": 8
+        },
+        "arithmetic": {
+          "total": 90,
+          "selected": 90
+        },
+        "contextual": {
+          "total": 120,
+          "selected": 15
+        },
+        "transcription": {
+          "total": 105,
+          "selected": 8
+        },
+        "duplicate_conflict": {
+          "total": 60,
+          "selected": 3
+        },
+        "material_change": {
+          "total": 45,
+          "selected": 4
+        }
+      },
+      "regions": {
+        "north": {
+          "positives": 140,
+          "selected_positives": 43
+        },
+        "south": {
+          "positives": 140,
+          "selected_positives": 40
+        },
+        "central": {
+          "positives": 140,
+          "selected_positives": 37
+        }
+      }
+    },
+    "arithmetic_peer": {
+      "precision_at_budget": 0.8056,
+      "recall_at_budget": 0.3452,
+      "false_positives": 35,
+      "critical_misses": 165,
+      "categories": {
+        "clean": {
+          "total": 390,
+          "selected": 0
+        },
+        "normal_extreme": {
+          "total": 90,
+          "selected": 35
+        },
+        "arithmetic": {
+          "total": 90,
+          "selected": 90
+        },
+        "contextual": {
+          "total": 120,
+          "selected": 55
+        },
+        "transcription": {
+          "total": 105,
+          "selected": 0
+        },
+        "duplicate_conflict": {
+          "total": 60,
+          "selected": 0
+        },
+        "material_change": {
+          "total": 45,
+          "selected": 0
+        }
+      },
+      "regions": {
+        "north": {
+          "positives": 140,
+          "selected_positives": 47
+        },
+        "south": {
+          "positives": 140,
+          "selected_positives": 49
+        },
+        "central": {
+          "positives": 140,
+          "selected_positives": 49
+        }
+      }
+    },
+    "evidence_aware": {
+      "precision_at_budget": 0.9222,
+      "recall_at_budget": 0.3952,
+      "false_positives": 14,
+      "critical_misses": 93,
+      "categories": {
+        "clean": {
+          "total": 390,
+          "selected": 10
+        },
+        "normal_extreme": {
+          "total": 90,
+          "selected": 4
+        },
+        "arithmetic": {
+          "total": 90,
+          "selected": 90
+        },
+        "contextual": {
+          "total": 120,
+          "selected": 3
+        },
+        "transcription": {
+          "total": 105,
+          "selected": 55
+        },
+        "duplicate_conflict": {
+          "total": 60,
+          "selected": 17
+        },
+        "material_change": {
+          "total": 45,
+          "selected": 1
+        }
+      },
+      "regions": {
+        "north": {
+          "positives": 140,
+          "selected_positives": 55
+        },
+        "south": {
+          "positives": 140,
+          "selected_positives": 57
+        },
+        "central": {
+          "positives": 140,
+          "selected_positives": 54
+        }
+      }
+    },
+    "no_ocr": {
+      "precision_at_budget": 0.8389,
+      "recall_at_budget": 0.3595,
+      "false_positives": 29,
+      "critical_misses": 131,
+      "categories": {
+        "clean": {
+          "total": 390,
+          "selected": 20
+        },
+        "normal_extreme": {
+          "total": 90,
+          "selected": 9
+        },
+        "arithmetic": {
+          "total": 90,
+          "selected": 90
+        },
+        "contextual": {
+          "total": 120,
+          "selected": 11
+        },
+        "transcription": {
+          "total": 105,
+          "selected": 4
+        },
+        "duplicate_conflict": {
+          "total": 60,
+          "selected": 30
+        },
+        "material_change": {
+          "total": 45,
+          "selected": 16
+        }
+      },
+      "regions": {
+        "north": {
+          "positives": 140,
+          "selected_positives": 55
+        },
+        "south": {
+          "positives": 140,
+          "selected_positives": 50
+        },
+        "central": {
+          "positives": 140,
+          "selected_positives": 46
+        }
+      }
+    },
+    "no_duplicates": {
+      "precision_at_budget": 0.9167,
+      "recall_at_budget": 0.3929,
+      "false_positives": 15,
+      "critical_misses": 105,
+      "categories": {
+        "clean": {
+          "total": 390,
+          "selected": 6
+        },
+        "normal_extreme": {
+          "total": 90,
+          "selected": 9
+        },
+        "arithmetic": {
+          "total": 90,
+          "selected": 90
+        },
+        "contextual": {
+          "total": 120,
+          "selected": 12
+        },
+        "transcription": {
+          "total": 105,
+          "selected": 55
+        },
+        "duplicate_conflict": {
+          "total": 60,
+          "selected": 5
+        },
+        "material_change": {
+          "total": 45,
+          "selected": 3
+        }
+      },
+      "regions": {
+        "north": {
+          "positives": 140,
+          "selected_positives": 58
+        },
+        "south": {
+          "positives": 140,
+          "selected_positives": 59
+        },
+        "central": {
+          "positives": 140,
+          "selected_positives": 48
+        }
+      }
+    }
+  },
+  "recall_gain": 0.05,
+  "synthetic_bootstrap": {
+    "replicates": 400,
+    "strata": "region \u00d7 scenario",
+    "gain_95_percent_interval": [
+      0.0191,
+      0.0714
+    ],
+    "interpretation": "Generator-conditional resampling only; it does not establish field performance."
+  },
+  "numeric_threshold_met_on_simulation": true,
+  "extra_critical_misses": -72,
+  "subgroup_regression": false,
+  "independent_holdout": false,
+  "verified_ocr_available_in_product": false,
+  "reviewer_time_and_decision_accuracy_measured": false,
+  "release_gate_passed": false,
+  "product_ranking_enabled": false,
+  "limitations": "Fictional generator and simulated pre-review OCR evidence; no independent labels, real reviewer timing, or decision-accuracy study. A duplicate digest is a reconciliation prompt, not an error finding."
+}
