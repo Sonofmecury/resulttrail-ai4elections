@@ -1,16 +1,54 @@
-# ResultTrail synthetic MVP
+# ResultTrail · evidence capture and human review
+
+![ResultTrail sign-in screen](docs/screenshots/01-sign-in.png)
+
+**[Explore the screenshot walkthrough](docs/SCREENSHOT_WALKTHROUGH.md)** · **[Read the user guide](docs/USER_GUIDE.pdf)** · **[View the project slides](docs/PROJECT_DEEP_DIVE.pptx)** · **[Browse all documentation](docs/README.md)**
 
 **Hosted site:** [resulttrail.ng](https://resulttrail.ng). The [Workers address](https://aegisrelay-app.mukhtarabdulrazaq-18.workers.dev) remains available. The site runs independently of this laptop and stores shared records in Cloudflare D1. See the [hosted deployment guide](cloud/README.md) for accounts, deployment and backups. The Python/SQLite path below is a local development demo.
 
 A free and open-source prototype for recording a **fictional** polling-unit result copy. A reporter can save encrypted drafts, records and a source image on a device during an outage, sign in and sync later, and verify a server-signed receipt. A reviewer can inspect arithmetic checks, the source image, field-by-field comparison notes, corrections and a geographic coverage map before making a human decision. Optional on-device OCR assists both roles. Only a reviewer-approved version can produce a readable PDF with the signed minimized JSON package embedded. This is independent observer workflow research, **not an official election system**.
 
+## Why this exists
+
+ResultTrail was developed in response to the [AI4Elections Track 5 observation and citizen-accountability brief](https://github.com/Rise-Networks-AI-Labs/-AI4Elections-Hackathon/blob/main/docs/01_technical_briefs/track5_election_observation_accountability.md). A result-copy report can be delayed by poor connectivity, entered incorrectly, or separated from the image a reviewer needs to inspect. This project tests a traceable path from local capture to server receipt and human review. It does **not** authenticate a paper form, certify vote totals, declare fraud or represent any electoral authority. The [one-page problem statement](docs/PROBLEM_STATEMENT.md) identifies the users and narrower problem.
+
+| Pathway | Working demonstration |
+| --- | --- |
+| Reporter | Generated report code, required state/LGA/ward, flexible party rows, encrypted offline draft, optional original image, retryable sync and receipt verification |
+| Reviewer | Queue, state → LGA → ward map, arithmetic prompts, hash-verified source image, field-by-field notes, human decision and reporter feedback |
+| Optional assistance | On-device OCR suggestions that require human acceptance or inspection; automated review ranking remains disabled |
+| Export | Readable approved PDF with embedded signed JSON package and public key; the PDF page drawing itself is not digitally signed |
+
+![Reviewer map of illustrative submissions by state](docs/screenshots/06-nigeria-map.png)
+
+## How the hosted demonstration works
+
+```mermaid
+flowchart LR
+  A[Reporter PWA] --> B[Encrypted local draft and image]
+  B -->|Sync when connected| C[Cloudflare Worker API]
+  C --> D[(D1 records, evidence and audit history)]
+  C -->|Signed receipt| A
+  D --> E[Reviewer workspace]
+  E --> F[Human review decision]
+  F -->|Approved version| G[PDF with embedded signed JSON]
+  A -. Optional on-device OCR .-> A
+  E -. Optional on-device OCR .-> E
+```
+
+The browser verifies the server receipt before marking a version received. An image hash checks byte identity after upload. OCR suggestions and arithmetic checks are prompts for a person; neither makes a review decision. The [system card](docs/system-card.md) describes exactly what each signature and check can prove.
+
 The illustrated [user guide](docs/USER_GUIDE.pdf) introduces the project and walks through both pathways, the state/LGA/ward map, OCR assistance, human comparison and PDF export. The [project deep dive](docs/PROJECT_DEEP_DIVE.pptx) explains architecture, database, code decisions, design and validation status. Both are updated as the prototype changes.
 
 The [8 November meeting readiness check](docs/MEETING_READINESS_2026-11-08.md) records the latest live smoke test, demonstration route and remaining evidence gaps.
 
-## Run locally (Windows PowerShell)
+## Run locally
 
-From this `app` directory:
+For the **hosted Worker/D1 version**, see [build, migrations, deployment and backup instructions](cloud/README.md). It uses the React/Vite client in `client/` and the Cloudflare Worker in `cloud/`. Deploying that version requires your own Cloudflare account, D1 database and signing secrets.
+
+### Legacy local Python demo (Windows PowerShell)
+
+From this repository directory:
 
 ```powershell
 py -3.13 -m venv .venv
@@ -43,7 +81,7 @@ The hosted reviewer account now has a Geographic Explorer with State → LGA →
 3. The app checks the response digest and Ed25519 signature before showing **Server received**. A repeat of identical report ID/version/content returns the same receipt; changed content at that ID/version is rejected.
 4. On the hosted site, optionally attach a JPEG, PNG or WebP source image of up to 750 KB in the reporter form, including while offline. Oversized or unsupported images show an error beside the picker. The original stays encrypted locally until sync. The signed report declares its hash; upload follows the verified report receipt and can be retried. This image feature is not part of the local Python backend.
 5. Sign in as reviewer. Use the dashboard and state map to find reports; inspect the latest version, arithmetic checks, source note and image. Zoom the image and record `matches`, `possible mismatch`, `cannot read` or `not compared` for each field, with a note and append-only history. Compare changes between versions, then add an overall note and approve or request correction. **Approve** enables the export download.
-6. The export downloads a signed minimized package and demo public key. Verify from this directory:
+6. An approved version downloads a readable PDF containing the signed minimized JSON package and public key as attachments. Extract those two JSON attachments, then verify the package from this directory:
 
 ```powershell
 .venv\Scripts\python -m server.verify PATH_TO_PACKAGE.json PATH_TO_PUBLIC_KEY.json
@@ -64,7 +102,7 @@ To create a consistent local demo backup, stop active write traffic and run `pyt
 
 The app accepts only fictional figures, notes and images; it does not collect real identities or official data. Map shading shows submission coverage or arithmetic checks, never election outcomes. Arithmetic flags prompt human comparison and never assert fraud. The reporter queue and draft use passphrase-wrapped AES-GCM in IndexedDB. Browser eviction, forgotten passphrases, an unlocked or compromised device, local disk failure and server key loss remain risks. This prototype is not sized or certified for a real election. See [system card](docs/system-card.md), [geographic data attribution](docs/geodata.md) and [data sheet](docs/synthetic-data-sheet.md).
 
-Runtime software is locally runnable without metered APIs. The frontend uses React, Vite and vite-plugin-pwa; the API uses FastAPI, SQLite and `cryptography`; the optional offline benchmark uses scikit-learn. The app source is MIT-licensed in [LICENSE](LICENSE). No account, domain, cloud service or AI API is needed to run the MVP.
+The local Python/SQLite subset runs without a cloud account or metered AI API. The hosted version uses React, Vite, vite-plugin-pwa, a Cloudflare Worker and D1; the legacy local API uses FastAPI, SQLite and `cryptography`. Optional local benchmarks use scikit-learn. The app source is MIT-licensed in [LICENSE](LICENSE). Cloudflare hosting is an external proprietary service, while the application code is open source.
 
 ## OCR assistance and gated review ranking
 

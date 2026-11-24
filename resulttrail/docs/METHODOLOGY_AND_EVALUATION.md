@@ -10,6 +10,8 @@ The web demonstration uses fictional records. The optional model benchmark uses 
 
 ## Evidence available now
 
+- A [24 November 2026 screenshot walkthrough](SCREENSHOT_WALKTHROUGH.md) records the live reporter form, on-device OCR, reviewer queue, three map levels, human evidence comparison, a deliberately mismatched OCR case and an approved PDF export. The [geographic demo data note](GEOGRAPHIC_DEMO_DATA.md) documents the 36 added fictional reports and their generated source images. These demonstrate workflow operation, not field accuracy or election outcomes.
+
 - Five local API tests cover receipt replay, correction, role and tenant access, review, export, input validation, capture checks and reporter feedback. Run `python -m pytest -q` with the development requirements installed.
 - The React client builds with `npm ci && npm run build`; the Worker type-checks with `npm ci && npm run check` in its own directory.
 - The hosted `/api/health` endpoint returned HTTP 200 after the 27 October 2026 deployment. The unauthenticated `/api/my-results` endpoint returned HTTP 401. A live browser sign-in showed the checklist counter and Records privacy text.
